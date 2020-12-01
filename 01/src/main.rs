@@ -21,13 +21,12 @@ fn part1() -> Option<u32> {
     // Then find any datum with a complement in the data and return the product
     data.iter()
         .filter(|datum| *datum <= &TARGET)
-        .filter_map(|datum| {
+        .find_map(|datum| {
             let complement = TARGET - datum;
             data.binary_search(&complement)
                 .ok()
                 .map(|_| datum * complement)
         })
-        .next()
 }
 
 // Find three entries that add up to 2020 and return their product
@@ -43,14 +42,13 @@ fn part2() -> Option<u32> {
             data.iter().skip(index).map(move |second| (*first, *second))
         })
         .filter(|(first, second)| first + second <= TARGET)
-        .filter_map(|(first, second)| {
+        .find_map(|(first, second)| {
             let third = TARGET - (first + second);
             // Find the complement with a binary_search
             data.binary_search(&third)
                 .ok()
                 .map(|_| first * second * third)
         })
-        .next()
 }
 
 fn main() {
