@@ -5,24 +5,27 @@ fn parse_input() -> Vec<u32> {
         .collect()
 }
 
-// Find two entries that add up to 2020 and return their product
-// Complexity: O(n*log(n))
-fn part1() -> Option<u32> {
+fn get_sorted_input() -> Vec<u32> {
     let mut data = parse_input();
     // Sort the data in O(n*log(n))
     data.sort();
-    let view = &data;
+    data
+}
+
+const TARGET: u32 = 2020;
+
+// Find two entries that add up to 2020 and return their product
+// Complexity: O(n*log(n))
+fn part1() -> Option<u32> {
+    let data = get_sorted_input();
     // Then find any datum with a complement in the data and return the product
     data.iter()
+        .filter(|datum| *datum <= &TARGET)
         .filter_map(|datum| {
-            if *datum <= 2020 {
-                let complement = 2020 - datum;
-                view.binary_search(&complement)
-                    .ok()
-                    .map(|_| datum * complement)
-            } else {
-                None
-            }
+            let complement = TARGET - datum;
+            data.binary_search(&complement)
+                .ok()
+                .map(|_| datum * complement)
         })
         .next()
 }
@@ -30,27 +33,22 @@ fn part1() -> Option<u32> {
 // Find three entries that add up to 2020 and return their product
 // Complexity: O(n^2*log(n))
 fn part2() -> Option<u32> {
-    let mut data = parse_input();
-    // Sort the data in O(n*log(n))
-    data.sort();
-    let view = &data;
-    // Iterate on the first level
-    data.iter()
+    let data = get_sorted_input();
+    data
+        // Iterate on the first level
+        .iter()
         .enumerate()
         .flat_map(|(index, first)| {
             // Iterate again, skipping pairs we've already considered
             data.iter().skip(index).map(move |second| (*first, *second))
         })
+        .filter(|(first, second)| first + second <= TARGET)
         .filter_map(|(first, second)| {
-            if first + second <= 2020 {
-                let third = 2020 - (first + second);
-                // Find the complement with a binary_search
-                view.binary_search(&third)
-                    .ok()
-                    .map(|_| first * second * third)
-            } else {
-                None
-            }
+            let third = TARGET - (first + second);
+            // Find the complement with a binary_search
+            data.binary_search(&third)
+                .ok()
+                .map(|_| first * second * third)
         })
         .next()
 }
