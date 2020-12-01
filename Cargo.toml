@@ -1,0 +1,15 @@
+[package]
+name = "advent_of_code_2020"
+version = "0.1.0"
+authors = ["Pierre Chevalier <pierrechevalier83@gmail.com>"]
+edition = "2018"
+
+[workspace]
+members = [
+	"01",
+]
+
+[[bin]]
+name = "advent_of_code_2020"
+path = "src/main.rs"
+
