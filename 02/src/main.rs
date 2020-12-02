@@ -2,8 +2,8 @@ use itertools::Itertools;
 use std::str::FromStr;
 
 struct Policy {
-    min: usize,
-    max: usize,
+    x: usize,
+    y: usize,
     letter: char,
 }
 
@@ -13,10 +13,10 @@ impl FromStr for Policy {
     // Parse a string with format: "10-12 k"
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((range, letter)) = s.split(' ').collect_tuple() {
-            if let Some((min, max)) = range.split('-').collect_tuple() {
+            if let Some((x, y)) = range.split('-').collect_tuple() {
                 Ok(Self {
-                    min: min.parse().map_err(|_| "Couldn't parse min".to_string())?,
-                    max: max.parse().map_err(|_| "Couldn't parse max".to_string())?,
+                    x: x.parse().map_err(|_| "Couldn't parse x".to_string())?,
+                    y: y.parse().map_err(|_| "Couldn't parse y".to_string())?,
                     letter: letter
                         .parse()
                         .map_err(|_| "couldn't parse letter".to_string())?,
@@ -32,9 +32,16 @@ impl FromStr for Policy {
 
 impl Policy {
     // Does this password respect this policy?
-    fn allows_password(&self, password: &str) -> bool {
+    // (letter occurs at least x and up to y)
+    fn allows_password_in_part_1(&self, password: &str) -> bool {
         let num_letters = password.chars().filter(|c| *c == self.letter).count();
-        num_letters >= self.min && num_letters <= self.max
+        num_letters >= self.x && num_letters <= self.y
+    }
+    // Does this password respect this policy?
+    // (letter occurs exactly once at one of these two one-based indices)
+    fn allows_password_in_part_2(&self, password: &str) -> bool {
+        (password.chars().nth(self.x - 1) == Some(self.letter))
+            ^ (password.chars().nth(self.y - 1) == Some(self.letter))
     }
 }
 
@@ -50,12 +57,21 @@ fn parse_input() -> Vec<(Policy, String)> {
 fn part1() -> usize {
     parse_input()
         .iter()
-        .filter(|(policy, password)| policy.allows_password(&password))
+        .filter(|(policy, password)| policy.allows_password_in_part_1(&password))
+        .count()
+}
+
+// Count the number of valid passwords in the file
+fn part2() -> usize {
+    parse_input()
+        .iter()
+        .filter(|(policy, password)| policy.allows_password_in_part_2(&password))
         .count()
 }
 
 fn main() {
     println!("part 1: {}", part1());
+    println!("part 2: {}", part2());
 }
 
 #[cfg(test)]
@@ -64,5 +80,9 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(), 517)
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(), 284)
     }
 }
