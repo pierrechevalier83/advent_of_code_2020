@@ -43,7 +43,7 @@ fn run(day: u8) {
 }
 
 fn main() {
-    let n_days = 1;
+    let n_days = 2;
     build_all(1..=n_days);
     let start_time = SystemTime::now();
     for day in 1..=n_days {

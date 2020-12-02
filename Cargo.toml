@@ -7,6 +7,7 @@ edition = "2018"
 [workspace]
 members = [
 	"01",
+	"02",
 ]
 
 [[bin]]
