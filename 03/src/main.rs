@@ -50,11 +50,16 @@ impl Matrix {
         let mut col_index = 0;
         self.rows
             .iter()
-            .filter(|row| {
-                let contains_object = row.contains_object(col_index);
-                row_index += down;
-                col_index += right;
-                contains_object
+            .enumerate()
+            .filter(|(index, row)| {
+                if *index == row_index {
+                    let contains_object = row.contains_object(col_index);
+                    row_index += down;
+                    col_index += right;
+                    contains_object
+                } else {
+                    false
+                }
             })
             .count()
     }
@@ -70,8 +75,22 @@ fn part1() -> usize {
     forest.count_objects_on_slope(3, 1)
 }
 
+fn product_of_trees_on_slopes(slopes: &[(usize, usize)], forest: &Matrix) -> usize {
+    slopes
+        .iter()
+        .map(|(right, down)| forest.count_objects_on_slope(*right, *down))
+        .product()
+}
+
+fn part2() -> usize {
+    let slopes = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
+    let forest = parse_input();
+    product_of_trees_on_slopes(&slopes, &forest)
+}
+
 fn main() {
     println!("part 1: {}", part1());
+    println!("part 2: {}", part2());
 }
 
 #[cfg(test)]
@@ -89,13 +108,22 @@ mod tests {
 .#..#...#.#";
     #[test]
     fn test_count_objects_on_slope() {
-        let input = SMALL_FOREST;
-        let forest = Matrix::from_str(input).unwrap();
-        assert_eq!(forest.count_objects_on_slope(3, 1), 7)
+        let forest = Matrix::from_str(SMALL_FOREST).unwrap();
+        assert_eq!(7, forest.count_objects_on_slope(3, 1))
+    }
+    #[test]
+    fn test_product_of_trees_on_slopes() {
+        let slopes = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
+        let forest = Matrix::from_str(SMALL_FOREST).unwrap();
+        assert_eq!(336, product_of_trees_on_slopes(&slopes, &forest))
     }
     use super::*;
     #[test]
     fn test_part1() {
         assert_eq!(part1(), 195)
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(), 3772314000)
     }
 }
