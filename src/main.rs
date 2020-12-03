@@ -3,6 +3,8 @@
 use std::process::Command;
 use std::time::SystemTime;
 
+const N_DAYS: u8 = 3;
+
 fn bin_name(day: u8) -> String {
     format!("{:02}", day)
 }
@@ -43,7 +45,7 @@ fn run(day: u8) {
 }
 
 fn main() {
-    let n_days = 2;
+    let n_days = N_DAYS;
     build_all(1..=n_days);
     let start_time = SystemTime::now();
     for day in 1..=n_days {
