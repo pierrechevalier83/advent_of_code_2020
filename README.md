@@ -9,7 +9,7 @@ For each challenge, at least 2 unit tests exist asserting that parts 1 and 2 are
 
 To run a specific day (e.g day 1), use
 ```
-cargo run --release -p 01
+cargo run --release -p day_01
 ```
 
 To run all days at once, use
