@@ -3,7 +3,7 @@
 use std::process::Command;
 use std::time::SystemTime;
 
-const N_DAYS: u8 = 3;
+const N_DAYS: u8 = 4;
 
 fn bin_name(day: u8) -> String {
     format!("{:02}", day)
@@ -34,7 +34,7 @@ fn run(day: u8) {
         .arg("-p")
         .arg(&bin_name(day))
         .status()
-        .expect(&format!("Running {} failed", bin_name(day)));
+        .unwrap_or_else(|_| panic!("Running {} failed", bin_name(day)));
 
     let elapsed = start_time.elapsed().unwrap();
     println!(
