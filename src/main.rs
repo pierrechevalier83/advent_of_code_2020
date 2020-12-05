@@ -3,7 +3,7 @@
 use std::process::Command;
 use std::time::SystemTime;
 
-const N_DAYS: u8 = 4;
+const N_DAYS: u8 = 5;
 
 fn bin_name(day: u8) -> String {
     format!("{:02}", day)
