@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 struct Ticket {
     row: u8,
@@ -53,8 +53,24 @@ fn part1() -> u16 {
         .unwrap()
 }
 
+fn part2() -> u16 {
+    let ticket_ids = parse_input()
+        .iter()
+        .map(|ticket| ticket.uid())
+        .collect::<HashSet<_>>();
+    let max_ticket_id = Ticket { row: 127, col: 7 }.uid();
+    (1..(max_ticket_id - 1))
+        .find(|ticket| {
+            !ticket_ids.contains(ticket)
+                && ticket_ids.contains(&(*ticket - 1))
+                && ticket_ids.contains(&(*ticket + 1))
+        })
+        .unwrap()
+}
+
 fn main() {
     println!("part 1: {}", part1());
+    println!("part 2: {}", part2());
 }
 
 #[cfg(test)]
@@ -70,5 +86,9 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(), 813)
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(), 612)
     }
 }
