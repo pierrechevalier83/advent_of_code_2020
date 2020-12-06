@@ -3,10 +3,10 @@
 use std::process::Command;
 use std::time::SystemTime;
 
-const N_DAYS: u8 = 5;
+const N_DAYS: u8 = 6;
 
 fn bin_name(day: u8) -> String {
-    format!("{:02}", day)
+    format!("day_{:02}", day)
 }
 
 fn build_all(days: impl Iterator<Item = u8>) {
