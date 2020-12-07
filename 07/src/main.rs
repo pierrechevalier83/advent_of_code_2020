@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use petgraph::{algo, graph::DiGraph, prelude::NodeIndex};
+use petgraph::{algo, prelude::*};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -68,7 +68,7 @@ impl FromStr for BagRules {
 }
 
 impl BagRules {
-    fn num_bags_which_can_contain(&self, target: &str) -> usize {
+    fn count_types_of_bags_which_can_contain(&self, target: &str) -> usize {
         let target = self.nodes[&target.to_string()];
         self.graph
             .node_indices()
@@ -76,14 +76,29 @@ impl BagRules {
             .filter(|node| algo::has_path_connecting(&self.graph, *node, target, None))
             .count()
     }
+    fn accumulate_edge_weights(&self, node: NodeIndex) -> usize {
+        self.graph
+            .edges_directed(node, Direction::Outgoing)
+            .map(|edge| *edge.weight() as usize * (1 + self.accumulate_edge_weights(edge.target())))
+            .sum()
+    }
+    fn count_bags_which_must_be_contained(&self, target: &str) -> usize {
+        let target = self.nodes[&target.to_string()];
+        self.accumulate_edge_weights(target)
+    }
 }
 
 fn part1() -> usize {
-    parse_input().num_bags_which_can_contain("shiny gold")
+    parse_input().count_types_of_bags_which_can_contain("shiny gold")
+}
+
+fn part2() -> usize {
+    parse_input().count_bags_which_must_be_contained("shiny gold")
 }
 
 fn main() {
     println!("part 1: {}", part1());
+    println!("part 2: {}", part2());
 }
 
 #[cfg(test)]
@@ -102,12 +117,17 @@ dotted black bags contain no other bags.";
     #[test]
     fn example() {
         let rules = BagRules::from_str(EXAMPLE_INPUT).unwrap();
-        assert_eq!(4, rules.num_bags_which_can_contain("shiny gold"));
-        assert_eq!(7, rules.num_bags_which_can_contain("faded blue"));
-        assert_eq!(0, rules.num_bags_which_can_contain("light red"));
+        assert_eq!(4, rules.count_types_of_bags_which_can_contain("shiny gold"));
+        assert_eq!(7, rules.count_types_of_bags_which_can_contain("faded blue"));
+        assert_eq!(0, rules.count_types_of_bags_which_can_contain("light red"));
+        assert_eq!(32, rules.count_bags_which_must_be_contained("shiny gold"));
     }
     #[test]
     fn test_part1() {
         assert_eq!(part1(), 222)
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(), 13264)
     }
 }
