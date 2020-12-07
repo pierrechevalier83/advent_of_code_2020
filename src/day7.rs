@@ -1,10 +1,11 @@
+use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 use petgraph::{algo, prelude::*};
 use std::collections::HashMap;
 use std::str::FromStr;
 
-fn parse_input() -> BagRules {
-    let data = include_str!("input.txt");
+#[aoc_generator(day7)]
+fn parse_input(data: &str) -> BagRules {
     BagRules::from_str(data).unwrap()
 }
 
@@ -88,17 +89,14 @@ impl BagRules {
     }
 }
 
-fn part1() -> usize {
-    parse_input().count_types_of_bags_which_can_contain("shiny gold")
+#[aoc(day7, part1)]
+fn part1(bag_rules: &BagRules) -> usize {
+    bag_rules.count_types_of_bags_which_can_contain("shiny gold")
 }
 
-fn part2() -> usize {
-    parse_input().count_bags_which_must_be_contained("shiny gold")
-}
-
-fn main() {
-    println!("part 1: {}", part1());
-    println!("part 2: {}", part2());
+#[aoc(day7, part2)]
+fn part2(bag_rules: &BagRules) -> usize {
+    bag_rules.count_bags_which_must_be_contained("shiny gold")
 }
 
 #[cfg(test)]
@@ -122,12 +120,15 @@ dotted black bags contain no other bags.";
         assert_eq!(0, rules.count_types_of_bags_which_can_contain("light red"));
         assert_eq!(32, rules.count_bags_which_must_be_contained("shiny gold"));
     }
+    fn input() -> BagRules {
+        parse_input(include_str!("../input/2020/day7.txt"))
+    }
     #[test]
     fn test_part1() {
-        assert_eq!(part1(), 222)
+        assert_eq!(part1(&input()), 222)
     }
     #[test]
     fn test_part2() {
-        assert_eq!(part2(), 13264)
+        assert_eq!(part2(&input()), 13264)
     }
 }

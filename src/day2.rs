@@ -1,3 +1,4 @@
+use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 use std::str::FromStr;
 
@@ -45,8 +46,8 @@ impl Policy {
     }
 }
 
-fn parse_input() -> Vec<(Policy, String)> {
-    let data = include_str!("input.txt");
+#[aoc_generator(day2)]
+fn parse_input(data: &str) -> Vec<(Policy, String)> {
     data.split_terminator('\n')
         .filter_map(|s| s.split(": ").collect_tuple())
         .map(|(policy, password)| (Policy::from_str(policy).unwrap(), password.to_string()))
@@ -54,35 +55,33 @@ fn parse_input() -> Vec<(Policy, String)> {
 }
 
 // Count the number of valid passwords in the file
-fn part1() -> usize {
-    parse_input()
-        .iter()
+#[aoc(day2, part1)]
+fn part1(data: &[(Policy, String)]) -> usize {
+    data.iter()
         .filter(|(policy, password)| policy.allows_password_in_part_1(&password))
         .count()
 }
 
 // Count the number of valid passwords in the file
-fn part2() -> usize {
-    parse_input()
-        .iter()
+#[aoc(day2, part2)]
+fn part2(data: &[(Policy, String)]) -> usize {
+    data.iter()
         .filter(|(policy, password)| policy.allows_password_in_part_2(&password))
         .count()
-}
-
-fn main() {
-    println!("part 1: {}", part1());
-    println!("part 2: {}", part2());
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn input() -> Vec<(Policy, String)> {
+        parse_input(include_str!("../input/2020/day2.txt"))
+    }
     #[test]
     fn test_part1() {
-        assert_eq!(part1(), 517)
+        assert_eq!(part1(&input()), 517)
     }
     #[test]
     fn test_part2() {
-        assert_eq!(part2(), 284)
+        assert_eq!(part2(&input()), 284)
     }
 }

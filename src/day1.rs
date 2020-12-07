@@ -1,12 +1,11 @@
-fn parse_input() -> Vec<u32> {
-    let data = include_str!("input.txt");
-    data.split_terminator('\n')
-        .map(|s| s.parse().unwrap())
-        .collect()
-}
+use aoc_runner_derive::{aoc, aoc_generator};
 
-fn get_sorted_input() -> Vec<u32> {
-    let mut data = parse_input();
+#[aoc_generator(day1)]
+fn parse_input(data: &str) -> Vec<u32> {
+    let mut data = data
+        .split_terminator('\n')
+        .map(|s| s.parse().unwrap())
+        .collect::<Vec<_>>();
     // Sort the data in O(n*log(n))
     data.sort();
     data
@@ -16,8 +15,8 @@ const TARGET: u32 = 2020;
 
 // Find two entries that add up to 2020 and return their product
 // Complexity: O(n*log(n))
-fn part1() -> Option<u32> {
-    let data = get_sorted_input();
+#[aoc(day1, part1)]
+fn part1(data: &[u32]) -> u32 {
     // Then find any datum with a complement in the data and return the product
     data.iter()
         .filter(|datum| *datum <= &TARGET)
@@ -27,12 +26,13 @@ fn part1() -> Option<u32> {
                 .ok()
                 .map(|_| datum * complement)
         })
+        .unwrap()
 }
 
 // Find three entries that add up to 2020 and return their product
 // Complexity: O(n^2*log(n))
-fn part2() -> Option<u32> {
-    let data = get_sorted_input();
+#[aoc(day1, part2)]
+fn part2(data: &[u32]) -> u32 {
     data
         // Iterate on the first level
         .iter()
@@ -49,28 +49,21 @@ fn part2() -> Option<u32> {
                 .ok()
                 .map(|_| first * second * third)
         })
-}
-
-fn main() {
-    println!(
-        "part 1: {}",
-        part1().expect("We assumed the input contained at least one pair")
-    );
-    println!(
-        "part 2: {}",
-        part2().expect("We assumed the input contained at least one triplet")
-    );
+        .unwrap()
 }
 
 #[cfg(test)]
 mod tests {
+    fn input() -> Vec<u32> {
+        parse_input(include_str!("../input/2020/day1.txt"))
+    }
     use super::*;
     #[test]
     fn test_part1() {
-        assert_eq!(part1(), Some(719796))
+        assert_eq!(part1(&input()), 719796)
     }
     #[test]
     fn test_part2() {
-        assert_eq!(part2(), Some(144554112))
+        assert_eq!(part2(&input()), 144554112)
     }
 }

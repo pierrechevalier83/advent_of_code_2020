@@ -1,3 +1,5 @@
+use aoc_runner_derive::{aoc, aoc_generator};
+
 use std::{collections::HashSet, str::FromStr};
 
 struct Row {
@@ -65,13 +67,13 @@ impl Matrix {
     }
 }
 
-fn parse_input() -> Matrix {
-    let data = include_str!("input.txt");
+#[aoc_generator(day3)]
+fn parse_input(data: &str) -> Matrix {
     Matrix::from_str(data).unwrap()
 }
 
-fn part1() -> usize {
-    let forest = parse_input();
+#[aoc(day3, part1)]
+fn part1(forest: &Matrix) -> usize {
     forest.count_objects_on_slope(3, 1)
 }
 
@@ -82,19 +84,15 @@ fn product_of_trees_on_slopes(slopes: &[(usize, usize)], forest: &Matrix) -> usi
         .product()
 }
 
-fn part2() -> usize {
+#[aoc(day3, part2)]
+fn part2(forest: &Matrix) -> usize {
     let slopes = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
-    let forest = parse_input();
     product_of_trees_on_slopes(&slopes, &forest)
-}
-
-fn main() {
-    println!("part 1: {}", part1());
-    println!("part 2: {}", part2());
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     const SMALL_FOREST: &str = "..##.......
 #...#...#..
 .#....#..#.
@@ -117,13 +115,15 @@ mod tests {
         let forest = Matrix::from_str(SMALL_FOREST).unwrap();
         assert_eq!(336, product_of_trees_on_slopes(&slopes, &forest))
     }
-    use super::*;
+    fn input() -> Matrix {
+        parse_input(include_str!("../input/2020/day3.txt"))
+    }
     #[test]
     fn test_part1() {
-        assert_eq!(part1(), 195)
+        assert_eq!(part1(&input()), 195)
     }
     #[test]
     fn test_part2() {
-        assert_eq!(part2(), 3772314000)
+        assert_eq!(part2(&input()), 3772314000)
     }
 }

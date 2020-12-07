@@ -1,16 +1,16 @@
-#![feature(iterator_fold_self)]
+use aoc_runner_derive::{aoc, aoc_generator};
 use std::collections::HashSet;
 
-fn parse_input() -> Vec<Vec<&'static str>> {
-    let data = include_str!("input.txt");
+#[aoc_generator(day6)]
+fn parse_input(data: &str) -> Vec<Vec<String>> {
     data.split_terminator("\n\n")
-        .map(|s| s.split_terminator('\n').collect())
+        .map(|s| s.split_terminator('\n').map(|s| s.to_string()).collect())
         .collect()
 }
 
-fn part1() -> usize {
-    parse_input()
-        .iter()
+#[aoc(day6, part1)]
+fn part1(data: &[Vec<String>]) -> usize {
+    data.iter()
         .map(|group| {
             group
                 .iter()
@@ -21,9 +21,9 @@ fn part1() -> usize {
         .sum()
 }
 
-fn part2() -> usize {
-    parse_input()
-        .iter()
+#[aoc(day6, part2)]
+fn part2(data: &[Vec<String>]) -> usize {
+    data.iter()
         .map(|group| {
             group
                 .iter()
@@ -35,20 +35,18 @@ fn part2() -> usize {
         .sum()
 }
 
-fn main() {
-    println!("part 1: {}", part1());
-    println!("part 2: {}", part2());
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn input() -> Vec<Vec<String>> {
+        parse_input(include_str!("../input/2020/day6.txt"))
+    }
     #[test]
     fn test_part1() {
-        assert_eq!(part1(), 6686)
+        assert_eq!(part1(&input()), 6686)
     }
     #[test]
     fn test_part2() {
-        assert_eq!(part2(), 3476)
+        assert_eq!(part2(&input()), 3476)
     }
 }

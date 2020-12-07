@@ -4,18 +4,10 @@ version = "0.1.0"
 authors = ["Pierre Chevalier <pierrechevalier83@gmail.com>"]
 edition = "2018"
 
-[workspace]
-members = [
-	"01",
-	"02",
-	"03",
-	"04",
-	"05",
-	"06",
-	"07",
-]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[[bin]]
-name = "advent_of_code_2020"
-path = "src/main.rs"
-
+[dependencies]
+aoc-runner = "0.3.0"
+aoc-runner-derive = "0.3.0"
+itertools = "0.9.0"
+petgraph = "0.5.1"
