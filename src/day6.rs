@@ -1,5 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 #[aoc_generator(day6)]
 fn parse_input(data: &str) -> Vec<Vec<String>> {
@@ -8,6 +8,8 @@ fn parse_input(data: &str) -> Vec<Vec<String>> {
         .collect()
 }
 
+const ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz";
+
 #[aoc(day6, part1)]
 fn part1(data: &[Vec<String>]) -> usize {
     data.iter()
@@ -15,7 +17,9 @@ fn part1(data: &[Vec<String>]) -> usize {
             group
                 .iter()
                 .flat_map(|person| person.chars())
-                .collect::<HashSet<char>>()
+                // Benchmarked to be better than a HashSet here, and equivalent to a sorted and
+                // deduplicated Vec
+                .collect::<BTreeSet<_>>()
                 .len()
         })
         .sum()
@@ -23,14 +27,28 @@ fn part1(data: &[Vec<String>]) -> usize {
 
 #[aoc(day6, part2)]
 fn part2(data: &[Vec<String>]) -> usize {
+    let mut chars_present: Vec<bool> = ALPHABET.chars().map(|_| true).collect();
     data.iter()
         .map(|group| {
-            group
-                .iter()
-                .map(|person| person.chars().collect::<HashSet<_>>())
-                .fold_first(|a, b| a.intersection(&b).cloned().collect())
-                .unwrap()
-                .len()
+            chars_present.iter_mut().for_each(|c| *c = true);
+            for person in group.iter() {
+                let mut chars = person.chars().collect::<Vec<_>>();
+                chars.sort();
+                chars.dedup();
+                let mut chars_idx = 0;
+                for (letter, char_present) in ALPHABET.chars().zip(chars_present.iter_mut()) {
+                    if let Some(c) = chars.get(chars_idx) {
+                        if letter != *c {
+                            *char_present = false;
+                        } else {
+                            chars_idx += 1;
+                        }
+                    } else {
+                        *char_present = false;
+                    }
+                }
+            }
+            chars_present.iter().filter(|b| **b).count()
         })
         .sum()
 }
