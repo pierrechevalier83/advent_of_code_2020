@@ -119,12 +119,12 @@ impl Program {
     }
 }
 
-struct ProgramPermutations {
-    instructions: Vec<Instruction>,
+struct ProgramPermutations<'a> {
+    instructions: &'a [Instruction],
     permuted_line: usize,
 }
 
-impl Iterator for ProgramPermutations {
+impl<'a> Iterator for ProgramPermutations<'a> {
     type Item = usize;
     fn next(&mut self) -> Option<Self::Item> {
         let program = Program::default();
@@ -160,7 +160,7 @@ fn part1(instructions: &[Instruction]) -> i32 {
 #[aoc(day8, part2)]
 fn part2(instructions: &[Instruction]) -> i32 {
     ProgramPermutations {
-        instructions: instructions.to_vec(),
+        instructions,
         permuted_line: 0,
     }
     .find_map(|permutation| {
