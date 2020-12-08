@@ -1,6 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
-use std::collections::HashSet;
 use std::str::FromStr;
 
 #[derive(Clone, Copy, Debug)]
@@ -66,50 +65,52 @@ enum ProgramStatus {
 }
 
 #[derive(Clone)]
-struct Program {
-    lines_visited: HashSet<usize>,
+struct Program<'a> {
+    instructions: &'a [Instruction],
+    lines_visited: Vec<bool>,
     accumulator: i32,
     position: usize,
+    permutation: Option<usize>,
     status: ProgramStatus,
 }
 
-impl Default for Program {
-    fn default() -> Self {
+impl<'a> Program<'a> {
+    fn new(instructions: &'a [Instruction], permutation: Option<usize>) -> Self {
         Self {
-            lines_visited: HashSet::new(),
+            instructions,
+            lines_visited: (0..instructions.len()).map(|_| false).collect(),
             accumulator: 0,
             position: 0,
+            permutation,
             status: ProgramStatus::Running,
         }
     }
-}
-
-impl Program {
-    fn execute_instruction(&mut self, instructions: &[Instruction], permutation: Option<usize>) {
-        let permuted = permutation == Some(self.position);
-        instructions[self.position].execute(&mut self.accumulator, &mut self.position, permuted);
+    fn execute_instruction(&mut self) {
+        let permuted = self.permutation == Some(self.position);
+        self.lines_visited[self.position] = true;
+        self.instructions[self.position].execute(
+            &mut self.accumulator,
+            &mut self.position,
+            permuted,
+        );
     }
-    fn next_instruction(&mut self, instructions: &[Instruction], permutation: Option<usize>) {
-        if self.position >= instructions.len() {
+    fn next_instruction(&mut self) {
+        if self.position >= self.instructions.len() {
             self.status = ProgramStatus::Terminated;
-        } else if !self.lines_visited.insert(self.position) {
+        } else if self.lines_visited[self.position] {
             self.status = ProgramStatus::Cycle;
         } else {
-            self.execute_instruction(instructions, permutation);
+            self.execute_instruction();
         }
     }
-    fn run(
-        &mut self,
-        instructions: &[Instruction],
-        permutation: Option<usize>,
-    ) -> (i32, ProgramStatus) {
+    fn run(&mut self) -> (i32, ProgramStatus) {
         while self.status != ProgramStatus::Terminated && self.status != ProgramStatus::Cycle {
-            self.next_instruction(instructions, permutation);
+            self.next_instruction();
         }
         (self.accumulator, self.status)
     }
-    fn would_permut_line(&self, instructions: &[Instruction], index: usize) -> bool {
-        instructions
+    fn would_permut_line(&self, index: usize) -> bool {
+        self.instructions
             .get(index)
             .map(|line| match line {
                 Instruction::NoOp(_) | Instruction::Jump(_) => true,
@@ -127,9 +128,9 @@ struct ProgramPermutations<'a> {
 impl<'a> Iterator for ProgramPermutations<'a> {
     type Item = usize;
     fn next(&mut self) -> Option<Self::Item> {
-        let program = Program::default();
+        let program = Program::new(self.instructions, None);
         loop {
-            if program.would_permut_line(&self.instructions, self.permuted_line) {
+            if program.would_permut_line(self.permuted_line) {
                 let permutation = Some(self.permuted_line);
                 self.permuted_line += 1;
                 return permutation;
@@ -154,7 +155,7 @@ fn parse_input(data: &str) -> Vec<Instruction> {
 
 #[aoc(day8, part1)]
 fn part1(instructions: &[Instruction]) -> i32 {
-    Program::default().run(instructions, None).0
+    Program::new(instructions, None).run().0
 }
 
 #[aoc(day8, part2)]
@@ -164,7 +165,7 @@ fn part2(instructions: &[Instruction]) -> i32 {
         permuted_line: 0,
     }
     .find_map(|permutation| {
-        let (accumulator, status) = Program::default().run(instructions, Some(permutation));
+        let (accumulator, status) = Program::new(instructions, Some(permutation)).run();
         match status {
             ProgramStatus::Terminated => Some(accumulator),
             _ => None,
