@@ -1,9 +1,9 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 
-use std::{collections::HashSet, str::FromStr};
+use std::str::FromStr;
 
 struct Row {
-    positions: HashSet<usize>,
+    positions: Vec<bool>,
     period: usize,
 }
 
@@ -16,8 +16,7 @@ impl FromStr for Row {
         Ok(Self {
             positions: s
                 .chars()
-                .enumerate()
-                .filter_map(|(i, x)| if x == '#' { Some(i) } else { None })
+                .map(|c| if c == '#' { true } else { false })
                 .collect(),
             period: s.chars().count(),
         })
@@ -26,7 +25,7 @@ impl FromStr for Row {
 
 impl Row {
     fn contains_object(&self, position: usize) -> bool {
-        self.period != 0 && self.positions.contains(&(position % self.period))
+        self.period != 0 && self.positions[(position % self.period)]
     }
 }
 
