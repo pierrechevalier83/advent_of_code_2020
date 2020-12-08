@@ -33,22 +33,32 @@ impl FromStr for Instruction {
 }
 
 impl Instruction {
-    fn execute(self, accumulator: &mut i32, position: &mut usize) -> i32 {
+    fn execute(self, accumulator: &mut i32, position: &mut usize, permuted: bool) -> i32 {
         match self {
-            Self::Jump(x) => *position = (*position as isize + x) as usize,
+            Self::Jump(x) => {
+                if permuted {
+                    *position += 1;
+                } else {
+                    *position = (*position as isize + x) as usize;
+                }
+            }
             Self::Accumulate(x) => {
                 *position += 1;
-                *accumulator += x
+                *accumulator += x;
             }
-            Self::NoOp(_) => {
-                *position += 1;
+            Self::NoOp(x) => {
+                if permuted {
+                    *position = (*position as isize + x) as usize;
+                } else {
+                    *position += 1;
+                }
             }
-        }
+        };
         *accumulator
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum ProgramStatus {
     Running,
     Terminated,
@@ -57,65 +67,52 @@ enum ProgramStatus {
 
 #[derive(Clone)]
 struct Program {
-    lines: Vec<Instruction>,
     lines_visited: HashSet<usize>,
     accumulator: i32,
     position: usize,
     status: ProgramStatus,
 }
 
-impl FromStr for Program {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {
-            lines: s
-                .split_terminator('\n')
-                .map(|line| Instruction::from_str(line))
-                .collect::<Result<Vec<_>, _>>()?,
+impl Default for Program {
+    fn default() -> Self {
+        Self {
             lines_visited: HashSet::new(),
             accumulator: 0,
             position: 0,
             status: ProgramStatus::Running,
-        })
-    }
-}
-
-impl Iterator for Program {
-    type Item = Program;
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.status {
-            ProgramStatus::Running => {
-                if self.position >= self.lines.len() {
-                    self.status = ProgramStatus::Terminated;
-                } else if !self.lines_visited.insert(self.position) {
-                    self.status = ProgramStatus::Cycle;
-                } else {
-                    self.execute_instruction();
-                }
-                Some(self.clone())
-            }
-            _ => None,
         }
     }
 }
 
 impl Program {
-    fn execute_instruction(&mut self) {
-        self.lines[self.position].execute(&mut self.accumulator, &mut self.position);
+    fn execute_instruction(&mut self, instructions: &[Instruction], permutation: Option<usize>) {
+        let permuted = permutation == Some(self.position);
+        instructions[self.position].execute(&mut self.accumulator, &mut self.position, permuted);
     }
-    fn permut_line(&mut self, index: usize) -> bool {
-        self.lines
-            .get_mut(index)
+    fn next_instruction(&mut self, instructions: &[Instruction], permutation: Option<usize>) {
+        if self.position >= instructions.len() {
+            self.status = ProgramStatus::Terminated;
+        } else if !self.lines_visited.insert(self.position) {
+            self.status = ProgramStatus::Cycle;
+        } else {
+            self.execute_instruction(instructions, permutation);
+        }
+    }
+    fn run(
+        &mut self,
+        instructions: &[Instruction],
+        permutation: Option<usize>,
+    ) -> (i32, ProgramStatus) {
+        while self.status != ProgramStatus::Terminated && self.status != ProgramStatus::Cycle {
+            self.next_instruction(instructions, permutation);
+        }
+        (self.accumulator, self.status)
+    }
+    fn would_permut_line(&self, instructions: &[Instruction], index: usize) -> bool {
+        instructions
+            .get(index)
             .map(|line| match line {
-                Instruction::NoOp(x) => {
-                    *line = Instruction::Jump(*x);
-                    true
-                }
-                Instruction::Jump(x) => {
-                    *line = Instruction::NoOp(*x);
-                    true
-                }
+                Instruction::NoOp(_) | Instruction::Jump(_) => true,
                 _ => false,
             })
             .unwrap_or(false)
@@ -123,20 +120,21 @@ impl Program {
 }
 
 struct ProgramPermutations {
-    program: Program,
+    instructions: Vec<Instruction>,
     permuted_line: usize,
 }
 
 impl Iterator for ProgramPermutations {
-    type Item = Program;
+    type Item = usize;
     fn next(&mut self) -> Option<Self::Item> {
-        let mut program = self.program.clone();
+        let program = Program::default();
         loop {
-            if program.permut_line(self.permuted_line) {
+            if program.would_permut_line(&self.instructions, self.permuted_line) {
+                let permutation = Some(self.permuted_line);
                 self.permuted_line += 1;
-                return Some(program);
+                return permutation;
             } else {
-                if self.permuted_line >= self.program.lines.len() {
+                if self.permuted_line >= self.instructions.len() {
                     return None;
                 } else {
                     self.permuted_line += 1;
@@ -147,26 +145,28 @@ impl Iterator for ProgramPermutations {
 }
 
 #[aoc_generator(day8)]
-fn parse_input(data: &str) -> Program {
-    Program::from_str(data).unwrap()
+fn parse_input(data: &str) -> Vec<Instruction> {
+    data.split_terminator('\n')
+        .map(|line| Instruction::from_str(line))
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap()
 }
 
 #[aoc(day8, part1)]
-fn part1(program: &Program) -> i32 {
-    program.clone().last().unwrap().accumulator
+fn part1(instructions: &[Instruction]) -> i32 {
+    Program::default().run(instructions, None).0
 }
 
 #[aoc(day8, part2)]
-fn part2(program: &Program) -> i32 {
+fn part2(instructions: &[Instruction]) -> i32 {
     ProgramPermutations {
-        program: program.clone(),
+        instructions: instructions.to_vec(),
         permuted_line: 0,
     }
-    .find_map(|program| {
-        let program = program.last().unwrap();
-        let status = program.status;
+    .find_map(|permutation| {
+        let (accumulator, status) = Program::default().run(instructions, Some(permutation));
         match status {
-            ProgramStatus::Terminated => Some(program.accumulator),
+            ProgramStatus::Terminated => Some(accumulator),
             _ => None,
         }
     })
@@ -185,7 +185,7 @@ acc +1
 jmp -4
 acc +6";
     use super::*;
-    fn input() -> Program {
+    fn input() -> Vec<Instruction> {
         parse_input(include_str!("../input/2020/day8.txt"))
     }
     #[test]
