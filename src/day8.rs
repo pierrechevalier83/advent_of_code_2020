@@ -3,11 +3,11 @@ use itertools::Itertools;
 use std::collections::HashSet;
 use std::str::FromStr;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Instruction {
     Jump(isize),
     Accumulate(i32),
-    NoOp,
+    NoOp(isize),
 }
 
 impl FromStr for Instruction {
@@ -23,7 +23,10 @@ impl FromStr for Instruction {
                 x.parse::<i32>()
                     .map_err(|_| format!("Couldn't parse {}", x))?,
             )),
-            Some(("nop", _)) => Ok(Self::NoOp),
+            Some(("nop", x)) => Ok(Self::NoOp(
+                x.parse::<isize>()
+                    .map_err(|_| format!("Couldn't parse {}", x))?,
+            )),
             _ => Err(format!("Invalid instruction: {}", s)),
         }
     }
@@ -37,12 +40,19 @@ impl Instruction {
                 *position += 1;
                 *accumulator += x
             }
-            Self::NoOp => {
+            Self::NoOp(_) => {
                 *position += 1;
             }
         }
         *accumulator
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum ProgramStatus {
+    Running,
+    Terminated,
+    Cycle,
 }
 
 #[derive(Clone)]
@@ -51,6 +61,7 @@ struct Program {
     lines_visited: HashSet<usize>,
     accumulator: i32,
     position: usize,
+    status: ProgramStatus,
 }
 
 impl FromStr for Program {
@@ -65,25 +76,73 @@ impl FromStr for Program {
             lines_visited: HashSet::new(),
             accumulator: 0,
             position: 0,
+            status: ProgramStatus::Running,
         })
     }
 }
 
 impl Iterator for Program {
-    type Item = i32;
+    type Item = Program;
     fn next(&mut self) -> Option<Self::Item> {
-        if !self.lines_visited.insert(self.position) {
-            None
-        } else {
-            Some(self.execute_instruction())
+        match self.status {
+            ProgramStatus::Running => {
+                if self.position >= self.lines.len() {
+                    self.status = ProgramStatus::Terminated;
+                } else if !self.lines_visited.insert(self.position) {
+                    self.status = ProgramStatus::Cycle;
+                } else {
+                    self.execute_instruction();
+                }
+                Some(self.clone())
+            }
+            _ => None,
         }
     }
 }
 
 impl Program {
-    fn execute_instruction(&mut self) -> i32 {
-        let instruction = self.lines[self.position];
-        instruction.execute(&mut self.accumulator, &mut self.position)
+    fn execute_instruction(&mut self) {
+        self.lines[self.position].execute(&mut self.accumulator, &mut self.position);
+    }
+    fn permut_line(&mut self, index: usize) -> bool {
+        self.lines
+            .get_mut(index)
+            .map(|line| match line {
+                Instruction::NoOp(x) => {
+                    *line = Instruction::Jump(*x);
+                    true
+                }
+                Instruction::Jump(x) => {
+                    *line = Instruction::NoOp(*x);
+                    true
+                }
+                _ => false,
+            })
+            .unwrap_or(false)
+    }
+}
+
+struct ProgramPermutations {
+    program: Program,
+    permuted_line: usize,
+}
+
+impl Iterator for ProgramPermutations {
+    type Item = Program;
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut program = self.program.clone();
+        loop {
+            if program.permut_line(self.permuted_line) {
+                self.permuted_line += 1;
+                return Some(program);
+            } else {
+                if self.permuted_line >= self.program.lines.len() {
+                    return None;
+                } else {
+                    self.permuted_line += 1;
+                }
+            }
+        }
     }
 }
 
@@ -94,11 +153,37 @@ fn parse_input(data: &str) -> Program {
 
 #[aoc(day8, part1)]
 fn part1(program: &Program) -> i32 {
-    program.clone().last().unwrap()
+    program.clone().last().unwrap().accumulator
+}
+
+#[aoc(day8, part2)]
+fn part2(program: &Program) -> i32 {
+    ProgramPermutations {
+        program: program.clone(),
+        permuted_line: 0,
+    }
+    .find_map(|program| {
+        let program = program.last().unwrap();
+        let status = program.status;
+        match status {
+            ProgramStatus::Terminated => Some(program.accumulator),
+            _ => None,
+        }
+    })
+    .unwrap()
 }
 
 #[cfg(test)]
 mod tests {
+    const EXAMPLE_INPUT: &'static str = "nop +0
+acc +1
+jmp +4
+acc +3
+jmp -3
+acc -99
+acc +1
+jmp -4
+acc +6";
     use super::*;
     fn input() -> Program {
         parse_input(include_str!("../input/2020/day8.txt"))
@@ -106,5 +191,13 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(&input()), 1487)
+    }
+    #[test]
+    fn test_example_part_2() {
+        assert_eq!(8, part2(&parse_input(EXAMPLE_INPUT)));
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(&input()), 1607)
     }
 }
