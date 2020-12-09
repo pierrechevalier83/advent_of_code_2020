@@ -12,6 +12,9 @@ fn parse_input(data: &str) -> Data {
 }
 
 struct Preamble {
+    // Benchmarked to be significantly better than HashSet in this case
+    // It's a small collection: 25 elements in the example: log(N) is smaller than the constant terms
+    // incurred by a HashSet
     numbers: BTreeSet<u64>,
     start_index: usize,
 }
@@ -82,11 +85,35 @@ impl Data {
             .copied()
             .unwrap()
     }
+    fn find_window(&self, target_sum: u64) -> u64 {
+        let mut start = 0;
+        let mut end = 0;
+        let mut sum = 0;
+        while start < self.data.len() {
+            if sum < target_sum && end < self.data.len() {
+                end += 1;
+                sum += self.data[end - 1];
+            } else if sum > target_sum && start < self.data.len() {
+                start += 1;
+                end = start;
+                sum = 0;
+            } else if sum == target_sum {
+                let window = self.data.iter().skip(start).take(end - start);
+                return window.clone().min().unwrap() + window.max().unwrap();
+            }
+        }
+        panic!("We expected to find a window");
+    }
 }
 
 #[aoc(day9, part1)]
 fn part1(data: &Data) -> u64 {
     data.find_first_invalid_number()
+}
+
+#[aoc(day9, part2)]
+fn part2(data: &Data) -> u64 {
+    data.find_window(data.find_first_invalid_number())
 }
 
 #[cfg(test)]
@@ -102,6 +129,7 @@ mod tests {
             5,
         ));
         assert_eq!(127, part1(&data));
+        assert_eq!(62, part2(&data));
     }
     fn input() -> Data {
         parse_input(include_str!("../input/2020/day9.txt"))
@@ -109,5 +137,9 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(&input()), 373803594)
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(&input()), 51152360)
     }
 }
