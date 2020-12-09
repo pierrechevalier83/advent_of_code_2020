@@ -44,6 +44,66 @@ impl From<BTreeSet<u64>> for Preamble {
         }
     }
 }
+
+struct Window<'a> {
+    data: &'a [u64],
+    start: usize,
+    end: usize,
+    min_size: usize,
+}
+
+impl<'a> Window<'a> {
+    fn from_data_and_min_size(data: &'a [u64], min_size: usize) -> Self {
+        Self {
+            data,
+            start: 0,
+            end: min_size,
+            min_size,
+        }
+    }
+    fn front(&self) -> Option<u64> {
+        self.data.get(self.start).copied()
+    }
+    fn back(&self) -> Option<u64> {
+        self.data.get(self.end - 1).copied()
+    }
+    fn push_back(&mut self) -> Option<u64> {
+        if self.end < self.data.len() {
+            self.end += 1;
+            self.back()
+        } else {
+            None
+        }
+    }
+    fn pop_back(&mut self) -> Option<u64> {
+        let falling_out = self.back();
+        if self.start + self.min_size < self.end {
+            self.end -= 1;
+            falling_out
+        } else {
+            None
+        }
+    }
+    fn pop_front(&mut self) -> Option<u64> {
+        let falling_out = self.front();
+        if self.start + self.min_size < self.end {
+            self.start += 1;
+            falling_out
+        } else {
+            None
+        }
+    }
+    fn view(&self) -> impl Iterator<Item = u64> + 'a {
+        self.data.iter().take(self.end).skip(self.start).copied()
+    }
+    fn at_right_edge(&self) -> bool {
+        self.back().is_none()
+    }
+    fn at_min_size(&self) -> bool {
+        self.end <= self.start + self.min_size
+    }
+}
+
 struct Data {
     preamble_size: usize,
     data: Vec<u64>,
@@ -85,27 +145,19 @@ impl Data {
             .copied()
             .unwrap()
     }
-    fn window(start: usize, end: usize, data: &[u64]) -> impl Iterator<Item = u64> + '_ {
-        data.iter().take(end).skip(start).copied()
-    }
     fn find_window(&self, target_sum: u64) -> u64 {
-        let mut start = 0;
-        let mut end = start + 2;
-        let mut sum: u64 = Self::window(start, end, &self.data).sum();
-        while start < self.data.len() - 2 {
-            if sum < target_sum && end < self.data.len() {
-                sum += self.data[end];
-                end += 1;
+        let mut window = Window::from_data_and_min_size(&self.data, 2);
+        let mut sum: u64 = window.view().sum();
+        while !window.at_right_edge() {
+            if sum < target_sum {
+                sum += window.push_back().unwrap();
             } else if sum > target_sum {
-                sum -= self.data[start];
-                start += 1;
-                while sum >= target_sum && end > start + 2 {
-                    end -= 1;
-                    sum -= self.data[end];
+                sum -= window.pop_front().unwrap();
+                while sum > target_sum && !window.at_min_size() {
+                    sum -= window.pop_back().unwrap()
                 }
             } else {
-                return Self::window(start, end, &self.data).min().unwrap()
-                    + Self::window(start, end, &self.data).max().unwrap();
+                return window.view().min().unwrap() + window.view().max().unwrap();
             }
         }
         panic!("We expected to find a window");
