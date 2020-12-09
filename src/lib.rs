@@ -1,4 +1,5 @@
 #![feature(iterator_fold_self)]
+#![feature(destructuring_assignment)]
 use aoc_runner_derive::aoc_lib;
 
 pub mod day1;

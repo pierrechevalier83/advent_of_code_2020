@@ -85,21 +85,25 @@ impl Data {
             .copied()
             .unwrap()
     }
+    fn window(start: usize, end: usize, data: &[u64]) -> impl Iterator<Item = u64> + '_ {
+        data.iter().take(end).skip(start).copied()
+    }
+    fn smallest_window(start: usize, data: &[u64]) -> (usize, u64) {
+        (start + 2, Self::window(start, start + 2, data).sum())
+    }
     fn find_window(&self, target_sum: u64) -> u64 {
         let mut start = 0;
-        let mut end = 0;
-        let mut sum = 0;
-        while start < self.data.len() {
+        let (mut end, mut sum) = Self::smallest_window(0, &self.data);
+        while start < self.data.len() - 2 {
             if sum < target_sum && end < self.data.len() {
+                sum += self.data[end];
                 end += 1;
-                sum += self.data[end - 1];
-            } else if sum > target_sum && start < self.data.len() {
+            } else if sum != target_sum {
                 start += 1;
-                end = start;
-                sum = 0;
-            } else if sum == target_sum {
-                let window = self.data.iter().skip(start).take(end - start);
-                return window.clone().min().unwrap() + window.max().unwrap();
+                (end, sum) = Self::smallest_window(start, &self.data);
+            } else {
+                return Self::window(start, end, &self.data).min().unwrap()
+                    + Self::window(start, end, &self.data).max().unwrap();
             }
         }
         panic!("We expected to find a window");
