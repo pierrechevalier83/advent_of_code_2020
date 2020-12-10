@@ -1,4 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use std::iter::{once, repeat};
 
 #[aoc_generator(day10)]
 fn parse_input(data: &str) -> Vec<u8> {
@@ -50,15 +51,18 @@ fn count_neighbours(index: usize, joltages: &[u8]) -> usize {
 }
 
 fn num_paths_from_index(joltages: &[u8]) -> usize {
-    let mut num_paths_from_index = joltages.iter().map(|_| None).collect::<Vec<_>>();
-    num_paths_from_index[joltages.len() - 1] = Some(1);
+    let mut num_paths = repeat(None)
+        .take(joltages.len() - 1)
+        .chain(once(Some(1)))
+        .collect::<Vec<_>>();
     for index in (0..joltages.len()).rev().skip(1) {
-        let num_paths = (index + 1..index + count_neighbours(index, joltages) + 1)
-            .map(|index| num_paths_from_index[index].unwrap())
-            .sum();
-        num_paths_from_index[index] = Some(num_paths);
+        num_paths[index] = Some(
+            (0..count_neighbours(index, joltages))
+                .map(|neighbour| num_paths[index + neighbour + 1].unwrap())
+                .sum(),
+        );
     }
-    num_paths_from_index[0].unwrap()
+    num_paths[0].unwrap()
 }
 
 #[aoc(day10, part2)]
