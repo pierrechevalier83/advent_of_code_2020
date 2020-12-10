@@ -49,25 +49,27 @@ fn count_neighbours(index: usize, joltages: &[u8]) -> usize {
         .count()
 }
 
-fn num_paths_from_index(index: usize, joltages: &[u8], visited: &mut Vec<Option<usize>>) -> usize {
-    if index == joltages.len() - 1 {
-        1
-    } else if let Some(num_paths) = visited[index] {
-        num_paths
-    } else {
-        let num_paths = (index + 1..index + count_neighbours(index, joltages) + 1)
-            .map(|index| num_paths_from_index(index, joltages, visited))
-            .sum();
-        visited[index] = Some(num_paths);
-        num_paths
-    }
+fn num_paths_from_index(joltages: &[u8]) -> usize {
+    let mut num_paths_from_index = joltages.iter().map(|_| None).collect::<Vec<_>>();
+    num_paths_from_index[joltages.len() - 1] = Some(1);
+    joltages
+        .iter()
+        .enumerate()
+        .rev()
+        .skip(1)
+        .for_each(|(index, _)| {
+            let num_paths = (index + 1..index + count_neighbours(index, joltages) + 1)
+                .map(|index| num_paths_from_index[index].unwrap())
+                .sum();
+            num_paths_from_index[index] = Some(num_paths);
+        });
+    num_paths_from_index[0].unwrap()
 }
 
 #[aoc(day10, part2)]
 fn part2(adapters: &[u8]) -> usize {
     let all_joltages = all_joltages(adapters);
-    let mut visited = all_joltages.iter().map(|_| None).collect();
-    num_paths_from_index(0, &all_joltages, &mut visited)
+    num_paths_from_index(&all_joltages)
 }
 
 #[cfg(test)]
