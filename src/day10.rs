@@ -40,25 +40,22 @@ fn part1(adapters: &[u8]) -> usize {
     diffs_of_1 * diffs_of_3
 }
 
+fn count_neighbours(index: usize, joltages: &[u8]) -> usize {
+    joltages
+        .iter()
+        .skip(index + 1)
+        .take(3)
+        .filter(|x| (*x - joltages[index]) <= 3)
+        .count()
+}
+
 fn num_paths_from_index(index: usize, joltages: &[u8], visited: &mut Vec<Option<usize>>) -> usize {
     if index == joltages.len() - 1 {
         1
     } else if let Some(num_paths) = visited[index] {
         num_paths
     } else {
-        let neighbour_indices = joltages
-            .iter()
-            .enumerate()
-            .skip(index + 1)
-            .take(3)
-            .filter_map(|(i, x)| {
-                if (*x - joltages[index]) <= 3 {
-                    Some(i)
-                } else {
-                    None
-                }
-            });
-        let num_paths = neighbour_indices
+        let num_paths = (index + 1..index + count_neighbours(index, joltages) + 1)
             .map(|index| num_paths_from_index(index, joltages, visited))
             .sum();
         visited[index] = Some(num_paths);
