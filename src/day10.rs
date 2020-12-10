@@ -52,17 +52,12 @@ fn count_neighbours(index: usize, joltages: &[u8]) -> usize {
 fn num_paths_from_index(joltages: &[u8]) -> usize {
     let mut num_paths_from_index = joltages.iter().map(|_| None).collect::<Vec<_>>();
     num_paths_from_index[joltages.len() - 1] = Some(1);
-    joltages
-        .iter()
-        .enumerate()
-        .rev()
-        .skip(1)
-        .for_each(|(index, _)| {
-            let num_paths = (index + 1..index + count_neighbours(index, joltages) + 1)
-                .map(|index| num_paths_from_index[index].unwrap())
-                .sum();
-            num_paths_from_index[index] = Some(num_paths);
-        });
+    for index in (0..joltages.len()).rev().skip(1) {
+        let num_paths = (index + 1..index + count_neighbours(index, joltages) + 1)
+            .map(|index| num_paths_from_index[index].unwrap())
+            .sum();
+        num_paths_from_index[index] = Some(num_paths);
+    }
     num_paths_from_index[0].unwrap()
 }
 
