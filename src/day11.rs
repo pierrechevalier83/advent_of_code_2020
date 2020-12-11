@@ -33,17 +33,18 @@ impl Debug for Seat {
 
 #[derive(Eq, PartialEq, Clone)]
 struct Plane {
-    seats: Vec<Vec<Seat>>,
+    seats: Vec<Seat>,
+    n_cols: usize,
 }
 
 impl Debug for Plane {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "")?;
-        for row in self.seats.iter() {
-            for seat in row {
-                write!(f, "{:?}", seat)?;
+        for (index, seat) in self.seats.iter().enumerate() {
+            write!(f, "{:?}", seat)?;
+            if index % self.n_cols == 0 {
+                writeln!(f, "")?;
             }
-            writeln!(f, "")?;
         }
         Ok(())
     }
@@ -52,9 +53,11 @@ impl From<&str> for Plane {
     fn from(s: &str) -> Self {
         Plane {
             seats: s
-                .split_terminator('\n')
-                .map(|s| s.chars().map(|c| c.into()).collect::<Vec<_>>())
+                .chars()
+                .filter(|c| *c != '\n')
+                .map(|c| c.into())
                 .collect::<Vec<_>>(),
+            n_cols: s.chars().position(|c| c == '\n').unwrap(),
         }
     }
 }
@@ -84,20 +87,16 @@ impl Plane {
             .and_then(|row| Self::adjacent_index(pos.1, dir.1, self.n_cols()).map(|col| (row, col)))
     }
     fn n_rows(&self) -> usize {
-        self.seats.len()
+        self.seats.len() / self.n_cols
     }
     fn n_cols(&self) -> usize {
-        self.seats[0].len()
+        self.n_cols
     }
     fn seat_at(&self, pos: (usize, usize)) -> Seat {
-        self.seats[pos.0][pos.1]
+        self.seats[pos.0 * self.n_cols + pos.1]
     }
     fn n_occupied_seats(&self) -> usize {
-        self.seats
-            .iter()
-            .flat_map(|row| row.iter())
-            .filter(|s| **s == Seat::Occupied)
-            .count()
+        self.seats.iter().filter(|s| **s == Seat::Occupied).count()
     }
     fn adjacent_seats(&self, pos: (usize, usize)) -> Vec<Seat> {
         Self::all_directions()
@@ -130,12 +129,11 @@ impl Plane {
     fn next_part1(&self) -> Option<Self> {
         let next = Self {
             seats: (0..self.n_rows())
-                .map(|row| {
-                    (0..self.n_cols())
-                        .map(|col| self.updated_seat_part1((row, col)))
-                        .collect()
+                .flat_map(|row| {
+                    (0..self.n_cols()).map(move |col| self.updated_seat_part1((row, col)))
                 })
                 .collect(),
+            n_cols: self.n_cols,
         };
         if next != *self {
             Some(next)
@@ -192,12 +190,11 @@ impl Plane {
     fn next_part2(&self) -> Option<Self> {
         let next = Self {
             seats: (0..self.n_rows())
-                .map(|row| {
-                    (0..self.n_cols())
-                        .map(|col| self.updated_seat_part2((row, col)))
-                        .collect()
+                .flat_map(|row| {
+                    (0..self.n_cols()).map(move |col| self.updated_seat_part2((row, col)))
                 })
                 .collect(),
+            n_cols: self.n_cols,
         };
         if next != *self {
             Some(next)
@@ -283,6 +280,7 @@ L.#.L..#..
     fn test_part1_with_example() {
         assert_eq!(37, part1(&EXAMPLE.into()))
     }
+
     #[test]
     fn test_part1() {
         assert_eq!(part1(&input()), 2427)
