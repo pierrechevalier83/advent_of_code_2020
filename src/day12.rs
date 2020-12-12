@@ -1,15 +1,21 @@
-use aoc_runner_derive::{aoc, aoc_generator};
+use aoc_runner_derive::aoc;
 use direction::CardinalDirection;
 use direction::Coord;
 
-enum ShipMove {
+#[derive(Clone, Copy, Debug)]
+enum RotationDirection {
+    Left,
+    Right,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Move {
     Translate(CardinalDirection, usize),
-    RotateLeft(usize),
-    RotateRight(usize),
+    Rotate(RotationDirection, usize),
     Forward(usize),
 }
 
-impl From<&str> for ShipMove {
+impl From<&str> for Move {
     fn from(s: &str) -> Self {
         let (c, rest) = s.split_at(1);
         let n = rest.parse::<usize>().unwrap();
@@ -18,89 +24,130 @@ impl From<&str> for ShipMove {
             "S" => Self::Translate(CardinalDirection::South, n),
             "E" => Self::Translate(CardinalDirection::East, n),
             "W" => Self::Translate(CardinalDirection::West, n),
-            "L" => Self::RotateLeft(n),
-            "R" => Self::RotateRight(n),
+            "L" => Self::Rotate(RotationDirection::Left, n),
+            "R" => Self::Rotate(RotationDirection::Right, n),
             "F" => Self::Forward(n),
             _ => panic!("Invalid input"),
         }
     }
 }
 
-struct Ship {
-    facing: CardinalDirection,
-    position: Coord,
+#[derive(Clone, Copy, Debug)]
+enum MoveRules {
+    PartOne,
+    PartTwo,
 }
 
-impl Default for Ship {
-    fn default() -> Self {
-        Ship {
-            facing: CardinalDirection::East,
-            position: Coord::default(),
-        }
-    }
+#[derive(Clone, Copy, Debug)]
+pub(super) struct Ship {
+    facing: CardinalDirection,
+    position: Coord,
+    waypoint: Coord,
+    move_rules: MoveRules,
 }
 
 impl Ship {
-    fn translate(&self, direction: CardinalDirection, distance: usize) -> Self {
+    fn new(move_rules: MoveRules) -> Self {
         Self {
-            facing: self.facing,
-            position: self.position + direction.coord() * distance as i32,
+            facing: CardinalDirection::East,
+            position: Coord::default(),
+            waypoint: Coord::new(10, -1),
+            move_rules,
         }
     }
-    fn rotate_left(&self, angle: usize) -> Self {
+    fn translate_coord(coord: Coord, direction: CardinalDirection, distance: usize) -> Coord {
+        coord + direction.coord() * distance as i32
+    }
+    fn translate(&mut self, direction: CardinalDirection, distance: usize) {
+        match self.move_rules {
+            MoveRules::PartOne => {
+                self.position = Self::translate_coord(self.position, direction, distance);
+            }
+            MoveRules::PartTwo => {
+                self.waypoint = Self::translate_coord(self.waypoint, direction, distance);
+            }
+        }
+    }
+    fn rotate(&mut self, direction: RotationDirection, angle: usize) {
         let n_rotations = angle / 90;
-        let mut facing = self.facing;
-        for _ in 0..n_rotations {
-            facing = facing.left90();
-        }
-        Self {
-            facing,
-            position: self.position,
+        match self.move_rules {
+            MoveRules::PartOne => {
+                for _ in 0..n_rotations {
+                    self.facing = match direction {
+                        RotationDirection::Left => self.facing.left90(),
+                        RotationDirection::Right => self.facing.right90(),
+                    }
+                }
+            }
+            MoveRules::PartTwo => {
+                for _ in 0..n_rotations {
+                    match direction {
+                        RotationDirection::Left => {
+                            self.waypoint = Coord::new(self.waypoint.y, -self.waypoint.x);
+                        }
+                        RotationDirection::Right => {
+                            self.waypoint = Coord::new(-self.waypoint.y, self.waypoint.x);
+                        }
+                    };
+                }
+            }
         }
     }
-    fn rotate_right(&self, angle: usize) -> Self {
-        let n_rotations = angle / 90;
-        let mut facing = self.facing;
-        for _ in 0..n_rotations {
-            facing = facing.right90();
-        }
-        Self {
-            facing,
-            position: self.position,
+    fn forward(&mut self, distance: usize) {
+        match self.move_rules {
+            MoveRules::PartOne => self.translate(self.facing, distance),
+            MoveRules::PartTwo => {
+                self.position = self.position + self.waypoint * distance as i32;
+            }
         }
     }
-    fn make_move(&self, m: ShipMove) -> Self {
+    fn make_move(&mut self, m: Move) {
         match m {
-            ShipMove::Translate(direction, distance) => self.translate(direction, distance),
-            ShipMove::RotateRight(angle) => self.rotate_right(angle),
-            ShipMove::RotateLeft(angle) => self.rotate_left(angle),
-            ShipMove::Forward(distance) => self.translate(self.facing, distance),
+            Move::Translate(direction, distance) => self.translate(direction, distance),
+            Move::Rotate(direction, angle) => self.rotate(direction, angle),
+            Move::Forward(distance) => self.forward(distance),
         }
     }
-}
-
-#[aoc_generator(day12)]
-fn parse_input(s: &str) -> Ship {
-    let mut ship = Ship::default();
-    for line in s.split_terminator('\n') {
-        ship = ship.make_move(ShipMove::from(line));
+    fn manhattan_distance_to_start(&self) -> usize {
+        self.position.manhattan_distance(Coord::default()) as usize
     }
-    ship
 }
 
 #[aoc(day12, part1)]
-fn part1(ship: &Ship) -> usize {
-    ship.position.manhattan_distance(Coord::new(0, 0)) as usize
+fn part1(s: &str) -> usize {
+    let mut ship = Ship::new(MoveRules::PartOne);
+    for line in s.split_terminator('\n') {
+        ship.make_move(Move::from(line));
+    }
+    ship.manhattan_distance_to_start()
+}
+
+#[aoc(day12, part2)]
+fn part2(s: &str) -> usize {
+    let mut ship = Ship::new(MoveRules::PartTwo);
+    for line in s.split_terminator('\n') {
+        ship.make_move(Move::from(line));
+    }
+    ship.manhattan_distance_to_start()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn input() -> Ship {
-        parse_input(include_str!("../input/2020/day12.txt"))
+    fn input() -> &'static str {
+        include_str!("../input/2020/day12.txt")
     }
     #[test]
     fn test_part1() {
-        assert_eq!(part1(&input()), 1457)
+        assert_eq!(part1(input()), 1457)
+    }
+    #[test]
+    fn test_example() {
+        let moves = "F10\nN3\nF7\nR90\nF11";
+        assert_eq!(286, part2(moves))
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(input()), 0)
     }
 }
