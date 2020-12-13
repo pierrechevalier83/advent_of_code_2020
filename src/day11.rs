@@ -1,6 +1,7 @@
-use aoc_runner_derive::{aoc, aoc_generator};
+use aoc_runner_derive::{aoc};
 use itertools::Itertools;
 use std::fmt::{self, Debug, Formatter};
+use std::iter::repeat;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum Seat {
@@ -33,42 +34,94 @@ impl Debug for Seat {
 
 #[derive(Eq, PartialEq, Clone)]
 struct Plane {
-    seats: Vec<Seat>,
+    visited: Vec<Vec<bool>>,
+    adjacent_seats: Vec<Vec<Vec<(usize, usize)>>>,
+    visible_seats: Vec<Vec<Vec<(usize, usize)>>>,
+    n_people: usize,
     n_cols: usize,
+    n_rows: usize,
+    n_visited_by_rows: Vec<usize>,
+    n_visited_by_cols: Vec<usize>,
 }
 
 impl Debug for Plane {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "")?;
-        for (index, seat) in self.seats.iter().enumerate() {
-            write!(f, "{:?}", seat)?;
-            if index % self.n_cols == 0 {
-                writeln!(f, "")?;
+        for row in 0..self.n_rows {
+            for col in 0..self.n_cols {
+                if !self.visited((row, col)) {
+                    write!(f, "{:?}", Seat::Empty)?;
+                } else {
+                    write!(f, "🟩")?;
+                }
             }
+            writeln!(f, "")?;
         }
         Ok(())
     }
 }
 impl From<&str> for Plane {
     fn from(s: &str) -> Self {
-        Plane {
-            seats: s
-                .chars()
-                .filter(|c| *c != '\n')
-                .map(|c| c.into())
-                .collect::<Vec<_>>(),
-            n_cols: s.chars().position(|c| c == '\n').unwrap(),
+        let n_cols = s.chars().position(|c| c == '\n').unwrap();
+        let n_rows = s.chars().filter(|c| *c != '\n').count() / n_cols;
+        let mut n_visited_by_rows = repeat(0).take(n_rows).collect::<Vec<_>>();
+        let mut n_visited_by_cols = repeat(0).take(n_cols).collect::<Vec<_>>();
+        let visited = s
+            .split_terminator('\n')
+            .enumerate()
+            .map(|(row, line)| {
+                line.chars()
+                    .map(move |c| Seat::from(c))
+                    .enumerate()
+                    .map(|(col, seat)| {
+                        if seat == Seat::Floor {
+                            n_visited_by_rows[row] += 1;
+                            n_visited_by_cols[col] += 1;
+                            true
+                        } else {
+                            false
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        Self {
+            visited,
+            n_people: 0,
+            n_cols,
+            n_rows,
+            n_visited_by_rows,
+            n_visited_by_cols,
+            adjacent_seats: vec![],
+            visible_seats: vec![],
         }
     }
 }
 
-impl Plane {
+#[derive(Debug, Clone, Copy)]
+enum Neighbourhood {
+    Adjacency,
+    Visibility,
+}
+
+impl<'a> Plane {
+    fn visited(&self, (row, col): (usize, usize)) -> bool {
+        self.n_visited_by_rows[row] == self.n_cols
+            || self.n_visited_by_cols[col] == self.n_rows
+            || self.visited[row][col]
+    }
+    fn mark_visited(&mut self, (row, col): (usize, usize)) {
+        if !self.visited((row, col)) {
+            self.visited[row][col] = true;
+            self.n_visited_by_rows[row] += 1;
+            self.n_visited_by_cols[col] += 1;
+        }
+    }
     fn all_directions() -> Vec<(isize, isize)> {
         let flat = [-1, 0, 1];
         flat.iter()
             .copied()
             .cartesian_product(flat.iter().copied())
-            .filter(|pos| *pos != (0, 0))
             .collect()
     }
     fn adjacent_index(index: usize, dir: isize, len: usize) -> Option<usize> {
@@ -83,150 +136,132 @@ impl Plane {
         pos: (usize, usize),
         dir: (isize, isize),
     ) -> Option<(usize, usize)> {
-        Self::adjacent_index(pos.0, dir.0, self.n_rows())
-            .and_then(|row| Self::adjacent_index(pos.1, dir.1, self.n_cols()).map(|col| (row, col)))
+        Self::adjacent_index(pos.0, dir.0, self.n_rows).and_then(|row| {
+            Self::adjacent_index(pos.1, dir.1, self.n_cols).and_then(|col| {
+                if self.visited((row, col)) {
+                    None
+                } else {
+                    Some((row, col))
+                }
+            })
+        })
     }
-    fn n_rows(&self) -> usize {
-        self.seats.len() / self.n_cols
-    }
-    fn n_cols(&self) -> usize {
-        self.n_cols
-    }
-    fn seat_at(&self, pos: (usize, usize)) -> Seat {
-        self.seats[pos.0 * self.n_cols + pos.1]
-    }
-    fn n_occupied_seats(&self) -> usize {
-        self.seats.iter().filter(|s| **s == Seat::Occupied).count()
-    }
-    fn adjacent_seats(&self, pos: (usize, usize)) -> Vec<Seat> {
+    fn adjacent_seats(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
         Self::all_directions()
             .iter()
             .filter_map(|dir| self.adjacent_position(pos, *dir))
-            .map(move |pos| self.seat_at(pos))
             .collect()
     }
-    fn updated_seat_part1(&self, pos: (usize, usize)) -> Seat {
-        if self.seat_at(pos) == Seat::Empty
-            && !self
-                .adjacent_seats(pos)
-                .iter()
-                .any(|s| *s == Seat::Occupied)
-        {
-            Seat::Occupied
-        } else if self.seat_at(pos) == Seat::Occupied
-            && self
-                .adjacent_seats(pos)
-                .iter()
-                .filter(|s| **s == Seat::Occupied)
-                .count()
-                >= 4
-        {
-            Seat::Empty
-        } else {
-            self.seat_at(pos)
-        }
-    }
-    fn next_part1(&self) -> Option<Self> {
-        let next = Self {
-            seats: (0..self.n_rows())
-                .flat_map(|row| {
-                    (0..self.n_cols()).map(move |col| self.updated_seat_part1((row, col)))
-                })
-                .collect(),
-            n_cols: self.n_cols,
-        };
-        if next != *self {
-            Some(next)
-        } else {
-            None
-        }
-    }
-    fn iterate_until_stable_part1(&self) -> Self {
-        let mut prev = self.clone();
-        loop {
-            let next = prev.next_part1();
-            if next.is_none() {
-                return prev;
-            }
-            prev = next.unwrap();
-        }
+    fn precompute_adjacent_seats(&mut self) {
+        let neighbours = (0..self.n_rows)
+            .map(|row| {
+                (0..self.n_cols)
+                    .map(|col| self.adjacent_seats((row, col)))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        self.adjacent_seats = neighbours;
     }
     fn visible_position(&self, pos: (usize, usize), dir: (isize, isize)) -> Option<(usize, usize)> {
-        let mut pos = Some(pos);
-        loop {
-            pos = self.adjacent_position(pos.unwrap(), dir);
-            if pos.is_none() {
+        if dir == (0, 0) {
+            if self.visited(pos) {
                 return None;
-            } else if self.seat_at(pos.unwrap()) != Seat::Floor {
-                return Some(pos.unwrap());
+            } else {
+                return Some(pos);
             }
         }
+        let mut pos = pos;
+        let mut ret = None;
+        while ret.is_none() {
+            let row = Self::adjacent_index(pos.0, dir.0, self.n_rows);
+            let col = Self::adjacent_index(pos.1, dir.1, self.n_cols);
+            if row.is_none() || col.is_none() {
+                return None;
+            }
+            pos = (row.unwrap(), col.unwrap());
+            ret = if self.visited(pos) { None } else { Some(pos) }
+        }
+        return ret;
     }
-    fn visible_seats(&self, pos: (usize, usize)) -> Vec<Seat> {
+    fn visible_seats(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
         Self::all_directions()
             .iter()
             .filter_map(|dir| self.visible_position(pos, *dir))
-            .map(move |pos| self.seat_at(pos))
             .collect()
     }
-    fn updated_seat_part2(&self, pos: (usize, usize)) -> Seat {
-        if self.seat_at(pos) == Seat::Empty
-            && !self.visible_seats(pos).iter().any(|s| *s == Seat::Occupied)
-        {
-            Seat::Occupied
-        } else if self.seat_at(pos) == Seat::Occupied
-            && self
-                .visible_seats(pos)
-                .iter()
-                .filter(|s| **s == Seat::Occupied)
-                .count()
-                >= 5
-        {
-            Seat::Empty
-        } else {
-            self.seat_at(pos)
-        }
+    fn precompute_visible_seats(&mut self) {
+        let neighbours = (0..self.n_rows)
+            .map(|row| {
+                (0..self.n_cols)
+                    .map(|col| self.visible_seats((row, col)))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        self.visible_seats = neighbours;
     }
-    fn next_part2(&self) -> Option<Self> {
-        let next = Self {
-            seats: (0..self.n_rows())
-                .flat_map(|row| {
-                    (0..self.n_cols()).map(move |col| self.updated_seat_part2((row, col)))
-                })
-                .collect(),
-            n_cols: self.n_cols,
-        };
-        if next != *self {
-            Some(next)
-        } else {
-            None
-        }
-    }
-    fn iterate_until_stable_part2(&self) -> Self {
-        let mut prev = self.clone();
-        loop {
-            let next = prev.next_part2();
-            if next.is_none() {
-                return prev;
-            }
-            prev = next.unwrap();
-        }
-    }
-}
+    fn next(&mut self, neighbourhood: Neighbourhood, num_tolerated: usize) -> bool {
+        let mut num_seen = 0;
+        let visited_neighbours = (0..self.n_rows)
+            .filter(|row| self.n_visited_by_rows[*row] < self.n_cols)
+            .flat_map(|row| {
+                (0..self.n_cols)
+                    .filter(|col| self.n_visited_by_cols[*col] < self.n_cols)
+                    .filter(|col| !self.visited[row][*col])
+                    .flat_map(|col| {
+                        let neighbours = match neighbourhood {
+                            Neighbourhood::Adjacency => &self.adjacent_seats,
+                            Neighbourhood::Visibility => &self.visible_seats,
+                        };
+                        if neighbours[row][col]
+                            .iter()
+                            .filter(|n| !self.visited[n.0][n.1])
+                            .count()
+                            < num_tolerated + 1
+                        {
+                            num_seen += 1;
 
-#[aoc_generator(day11)]
-fn parse_input(data: &str) -> Plane {
-    data.into()
+                            neighbours[row][col].clone()
+                        } else {
+                            vec![]
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        visited_neighbours
+            .iter()
+            .for_each(|n| self.mark_visited(*n));
+        self.n_people += num_seen;
+
+        if self.n_visited_by_rows.iter().sum::<usize>() == self.n_rows * self.n_cols {
+            false
+        } else {
+            true
+        }
+    }
+    fn iterate_until_stable(&mut self, neighbourhood: Neighbourhood, num_tolerated: usize) {
+        match neighbourhood {
+            Neighbourhood::Adjacency => self.precompute_adjacent_seats(),
+            Neighbourhood::Visibility => self.precompute_visible_seats(),
+        }
+        while self.next(neighbourhood, num_tolerated) {
+            // keep looping
+        }
+    }
 }
 
 #[aoc(day11, part1)]
-fn part1(plane: &Plane) -> usize {
-    plane.iterate_until_stable_part1().n_occupied_seats()
+fn part1(s: &str) -> usize {
+    let mut plane = Plane::from(s);
+    plane.iterate_until_stable(Neighbourhood::Adjacency, 4);
+    plane.n_people
 }
 
 #[aoc(day11, part2)]
-fn part2(plane: &Plane) -> usize {
-    plane.iterate_until_stable_part2().n_occupied_seats()
+fn part2(s: &str) -> usize {
+    let mut plane = Plane::from(s);
+    plane.iterate_until_stable(Neighbourhood::Visibility, 5);
+    plane.n_people
 }
 
 #[cfg(test)]
@@ -242,43 +277,12 @@ L.LLLLL.LL
 LLLLLLLLLL
 L.LLLLLL.L
 L.LLLLL.LL";
-    const AFTER_ONE_ROUND: &'static str = "#.##.##.##
-#######.##
-#.#.#..#..
-####.##.##
-#.##.##.##
-#.#####.##
-..#.#.....
-##########
-#.######.#
-#.#####.##";
-    const AFTER_LAST_ROUND: &'static str = "#.#L.L#.##
-#LLL#LL.L#
-L.#.L..#..
-#L##.##.L#
-#.#L.LL.LL
-#.#L#L#.##
-..L.L.....
-#L#L##L#L#
-#.LLLLLL.L
-#.#L#L#.##";
-
-    fn input() -> Plane {
-        parse_input(include_str!("../input/2020/day11.txt"))
-    }
-    #[test]
-    fn test_one_iteration() {
-        let plane = Plane::from(EXAMPLE).next_part1().unwrap();
-        assert_eq!(Plane::from(AFTER_ONE_ROUND), plane)
-    }
-    #[test]
-    fn test_all_iterations() {
-        let last = Plane::from(EXAMPLE).iterate_until_stable_part1();
-        assert_eq!(Plane::from(AFTER_LAST_ROUND), last)
+    fn input() -> &'static str {
+        include_str!("../input/2020/day11.txt")
     }
     #[test]
     fn test_part1_with_example() {
-        assert_eq!(37, part1(&EXAMPLE.into()))
+        assert_eq!(37, part1(&EXAMPLE))
     }
 
     #[test]
