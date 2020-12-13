@@ -1,5 +1,6 @@
 #![feature(iterator_fold_self)]
 #![feature(destructuring_assignment)]
+#![feature(str_split_once)]
 use aoc_runner_derive::aoc_lib;
 
 pub mod day01;
@@ -14,5 +15,6 @@ pub mod day09;
 pub mod day10;
 pub mod day11;
 pub mod day12;
+pub mod day13;
 
 aoc_lib! { year = 2020 }
