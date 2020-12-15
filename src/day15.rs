@@ -1,4 +1,5 @@
 use aoc_runner_derive::aoc;
+use std::collections::HashMap;
 
 fn puzzle_input() -> Game {
     Game::from(vec![9, 6, 0, 10, 18, 2, 1])
@@ -6,33 +7,40 @@ fn puzzle_input() -> Game {
 
 #[derive(Debug)]
 struct Game {
-    numbers: Vec<usize>,
+    len: usize,
+    last: usize,
+    turn: usize,
+    previously_seen: HashMap<usize, usize>,
 }
 
 impl From<Vec<usize>> for Game {
     fn from(seq: Vec<usize>) -> Self {
-        Self { numbers: seq }
+        Self {
+            len: seq.len(),
+            last: *seq.last().unwrap(),
+            turn: seq.len(),
+            previously_seen: seq
+                .iter()
+                .take(seq.len() - 1)
+                .copied()
+                .enumerate()
+                .map(|(i, n)| (n, i))
+                .collect(),
+        }
     }
 }
 
 impl Iterator for Game {
     type Item = usize;
     fn next(&mut self) -> Option<usize> {
-        let turn = self.numbers.len();
-        let last = self.numbers.last().copied().unwrap();
-        let last_seen_at = self.numbers.iter().rev().position(|x| *x == last);
-        let previously_seen_at = self
-            .numbers
-            .iter()
-            .rev()
-            // skip the one we've already seen
-            .skip(1 + last_seen_at.unwrap_or(0))
-            .position(|x| *x == last)
-            // count the one we skipped
-            .map(|x| x + 1);
-        let next = previously_seen_at.unwrap_or(last_seen_at.unwrap_or(turn));
-        self.numbers.push(next);
-        println!("{}", next);
+        let next = self
+            .previously_seen
+            .get(&self.last)
+            .map(|previously_seen_at| self.turn - 1 - previously_seen_at)
+            .unwrap_or(0);
+        self.previously_seen.insert(self.last, self.turn - 1);
+        self.turn += 1;
+        self.last = next;
         Some(next)
     }
 }
@@ -40,7 +48,12 @@ impl Iterator for Game {
 #[aoc(day15, part1)]
 fn part1(_: &str) -> usize {
     let mut game = puzzle_input();
-    game.nth(2020 - game.numbers.len() - 1).unwrap()
+    game.nth(2020 - game.len - 1).unwrap()
+}
+#[aoc(day15, part2)]
+fn part2(_: &str) -> usize {
+    let mut game = puzzle_input();
+    game.nth(30000000 - game.len - 1).unwrap()
 }
 
 #[cfg(test)]
@@ -58,5 +71,9 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(""), 1238)
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(""), 3745954)
     }
 }
