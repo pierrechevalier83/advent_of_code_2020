@@ -1,6 +1,7 @@
 #![feature(iterator_fold_self)]
 #![feature(destructuring_assignment)]
 #![feature(str_split_once)]
+#![feature(drain_filter)]
 use aoc_runner_derive::aoc_lib;
 
 pub mod point3d;
