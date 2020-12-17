@@ -3,6 +3,8 @@
 #![feature(str_split_once)]
 use aoc_runner_derive::aoc_lib;
 
+pub mod point3d;
+
 pub mod day01;
 pub mod day02;
 pub mod day03;
@@ -19,5 +21,6 @@ pub mod day13;
 pub mod day14;
 pub mod day15;
 pub mod day16;
+pub mod day17;
 
 aoc_lib! { year = 2020 }
