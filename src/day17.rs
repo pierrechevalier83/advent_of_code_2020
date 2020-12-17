@@ -5,24 +5,25 @@ use std::collections::HashSet;
 #[derive(Debug, Clone)]
 struct ConwayCube<Point> {
     active: HashSet<Point>,
+    inactive: HashSet<Point>,
 }
 
 impl<Point: PointND> From<&str> for ConwayCube<Point> {
     fn from(s: &str) -> Self {
-        Self {
-            active: s
-                .split("\n")
-                .enumerate()
-                .flat_map(|(row_index, row)| {
-                    row.chars()
-                        .enumerate()
-                        .filter(|(_, c)| *c == '#')
-                        .map(move |(col_index, _)| {
-                            Point::from_2d(row_index as isize, col_index as isize)
-                        })
-                })
-                .collect(),
-        }
+        let active = s
+            .split("\n")
+            .enumerate()
+            .flat_map(|(row_index, row)| {
+                row.chars()
+                    .enumerate()
+                    .filter(|(_, c)| *c == '#')
+                    .map(move |(col_index, _)| {
+                        Point::from_2d(row_index as isize, col_index as isize)
+                    })
+            })
+            .collect::<HashSet<_>>();
+        let inactive = Self::inactive_from_active(&active);
+        Self { active, inactive }
     }
 }
 
@@ -42,21 +43,28 @@ impl<Point: PointND> ConwayCube<Point> {
             .count()
             == 3
     }
+    fn inactive_from_active(active: &HashSet<Point>) -> HashSet<Point> {
+        active
+            .iter()
+            .flat_map(|p| p.neighbours())
+            .filter(|p| !active.contains(p))
+            .collect()
+    }
     fn next(self) -> Self {
-        Self {
-            active: self
-                .active
-                .iter()
-                .copied()
-                .filter(|p| self.remains_active(*p))
-                .chain(
-                    self.active
-                        .iter()
-                        .flat_map(|p| p.neighbours())
-                        .filter(|p| !self.active.contains(p) && self.becomes_active(*p)),
-                )
-                .collect(),
-        }
+        let active = self
+            .active
+            .iter()
+            .copied()
+            .filter(|p| self.remains_active(*p))
+            .chain(
+                self.inactive
+                    .iter()
+                    .filter(|p| self.becomes_active(**p))
+                    .copied(),
+            )
+            .collect();
+        let inactive = Self::inactive_from_active(&active);
+        Self { active, inactive }
     }
     fn nth(self, n: usize) -> Self {
         let mut nth = self;
