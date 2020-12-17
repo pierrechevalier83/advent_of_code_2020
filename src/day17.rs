@@ -1,13 +1,13 @@
-use crate::point3d::Point;
-use aoc_runner_derive::{aoc, aoc_generator};
+use crate::{point3d, point4d, pointnd::PointND};
+use aoc_runner_derive::aoc;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
-struct ConwayCube {
+struct ConwayCube<Point> {
     active: HashSet<Point>,
 }
 
-impl From<&str> for ConwayCube {
+impl<Point: PointND> From<&str> for ConwayCube<Point> {
     fn from(s: &str) -> Self {
         Self {
             active: s
@@ -18,7 +18,7 @@ impl From<&str> for ConwayCube {
                         .enumerate()
                         .filter(|(_, c)| *c == '#')
                         .map(move |(col_index, _)| {
-                            Point::new(row_index as isize, col_index as isize, 0)
+                            Point::from_2d(row_index as isize, col_index as isize)
                         })
                 })
                 .collect(),
@@ -26,13 +26,21 @@ impl From<&str> for ConwayCube {
     }
 }
 
-impl ConwayCube {
+impl<Point: PointND> ConwayCube<Point> {
     fn remains_active(&self, p: Point) -> bool {
-        let num_active_neighbours = p.neighbours().filter(|n| self.active.contains(n)).count();
+        let num_active_neighbours = p
+            .neighbours()
+            .iter()
+            .filter(|n| self.active.contains(n))
+            .count();
         num_active_neighbours == 2 || num_active_neighbours == 3
     }
     fn becomes_active(&self, p: Point) -> bool {
-        p.neighbours().filter(|n| self.active.contains(n)).count() == 3
+        p.neighbours()
+            .iter()
+            .filter(|n| self.active.contains(n))
+            .count()
+            == 3
     }
     fn next(self) -> Self {
         Self {
@@ -62,30 +70,44 @@ impl ConwayCube {
     }
 }
 
-#[aoc_generator(day17)]
-fn parse_input(s: &str) -> ConwayCube {
-    let cube = ConwayCube::from(s);
-    cube
+#[aoc(day17, part1)]
+fn part1(s: &str) -> usize {
+    ConwayCube::<point3d::Point>::from(s).nth(6).num_active()
 }
 
-#[aoc(day17, part1)]
-fn part1(cube: &ConwayCube) -> usize {
-    cube.clone().nth(6).num_active()
+#[aoc(day17, part2)]
+fn part2(s: &str) -> usize {
+    ConwayCube::<point4d::Point>::from(s).nth(6).num_active()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn input() -> ConwayCube {
-        parse_input(include_str!("../input/2020/day17.txt"))
+    fn input() -> &'static str {
+        include_str!("../input/2020/day17.txt")
     }
     #[test]
     fn test_example() {
         let input = ".#.\n..#\n###";
-        assert_eq!(112, ConwayCube::from(input).nth(6).num_active())
+        assert_eq!(
+            112,
+            ConwayCube::<point3d::Point>::from(input)
+                .nth(6)
+                .num_active()
+        );
+        assert_eq!(
+            848,
+            ConwayCube::<point4d::Point>::from(input)
+                .nth(6)
+                .num_active()
+        )
     }
     #[test]
     fn test_part1() {
-        assert_eq!(part1(&input()), 42)
+        assert_eq!(part1(&input()), 273)
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(&input()), 1504)
     }
 }

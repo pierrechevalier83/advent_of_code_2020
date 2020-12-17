@@ -4,6 +4,8 @@
 use aoc_runner_derive::aoc_lib;
 
 pub mod point3d;
+pub mod point4d;
+pub mod pointnd;
 
 pub mod day01;
 pub mod day02;
