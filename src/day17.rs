@@ -1,11 +1,11 @@
 use crate::{point3d, point4d, pointnd::PointND};
 use aoc_runner_derive::aoc;
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 
 #[derive(Debug, Clone)]
 struct ConwayCube<Point> {
-    active: HashSet<Point>,
-    inactive: HashSet<Point>,
+    active: FxHashSet<Point>,
+    inactive: FxHashSet<Point>,
 }
 
 impl<Point: PointND> From<&str> for ConwayCube<Point> {
@@ -21,7 +21,7 @@ impl<Point: PointND> From<&str> for ConwayCube<Point> {
                         Point::from_2d(row_index as isize, col_index as isize)
                     })
             })
-            .collect::<HashSet<_>>();
+            .collect::<FxHashSet<_>>();
         let inactive = Self::inactive_from_active(&active);
         Self { active, inactive }
     }
@@ -43,7 +43,7 @@ impl<Point: PointND> ConwayCube<Point> {
             .count()
             == 3
     }
-    fn inactive_from_active(active: &HashSet<Point>) -> HashSet<Point> {
+    fn inactive_from_active(active: &FxHashSet<Point>) -> FxHashSet<Point> {
         active
             .iter()
             .flat_map(|p| p.neighbours())

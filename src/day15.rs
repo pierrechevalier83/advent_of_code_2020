@@ -1,5 +1,5 @@
 use aoc_runner_derive::aoc;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 
 fn puzzle_input() -> Game {
     Game::from(vec![9, 6, 0, 10, 18, 2, 1])
@@ -10,7 +10,7 @@ struct Game {
     len: usize,
     last: usize,
     turn: usize,
-    previously_seen: HashMap<usize, usize>,
+    previously_seen: FxHashMap<usize, usize>,
 }
 
 impl From<Vec<usize>> for Game {

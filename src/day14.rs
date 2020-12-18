@@ -1,6 +1,6 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use radix_fmt;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::iter::repeat;
 
 enum Version {
@@ -102,7 +102,7 @@ impl From<&str> for Op {
 struct Program {
     ops: Vec<Op>,
     mask: Mask,
-    mem: HashMap<usize, u64>,
+    mem: FxHashMap<usize, u64>,
 }
 
 impl From<&str> for Program {
@@ -115,7 +115,7 @@ impl From<&str> for Program {
         Self {
             mask,
             ops,
-            mem: HashMap::new(),
+            mem: FxHashMap::default(),
         }
     }
 }
