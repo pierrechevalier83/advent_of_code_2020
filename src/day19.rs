@@ -113,6 +113,62 @@ fn part1(rules: &Rules) -> usize {
         .count()
 }
 
+#[aoc(day19, part2)]
+fn part2(rules: &Rules) -> usize {
+    // Before:
+    // 0: 8 11
+    // 8: 42
+    // 11: 42 31
+    // Now:
+    // 0: 8 11
+    // 8: 42 | 42 8
+    // 11: 42 31 | 42 11 31
+    //
+    // Rule 8 now means: any number of instances of rule 42 greater than one
+    // Rule 11 now means: EitherOr([42 31], [42 11 31]), which is to say: either 42 31 or a
+    // certain number of 42s followed by the same number of 31s.
+    //
+    // So rule 0 becomes:
+    // N 42s and M 31s where N >= 2 and M < N
+    //
+    // From the original case,
+    // We can keep adding 42s in the front.
+    // If a message matches, we can count it and stop looking at it in the future
+    // If a message doesn't match the N 42s, it can be ruled out and not counted
+    // We will eventually have counted or ruled out all messages
+    let mut n_matching = 0;
+    let mut n_unknown = rules.messages.len();
+    let mut unknown_messages = repeat(true).take(rules.messages.len()).collect::<Vec<_>>();
+    for n_42s in 2..100 {
+        for n_31s in 1..n_42s {
+            let previously_unknown = unknown_messages.clone();
+            for (index, message) in rules
+                .messages
+                .iter()
+                .enumerate()
+                .filter(|(index, _)| previously_unknown[*index])
+            {
+                let first_rule = Rule::Seq(repeat(42).take(n_42s).collect());
+                if let Some(second_part) = rules.matches_rule(message, &first_rule) {
+                    let second_rule = Rule::Seq(repeat(31).take(n_31s).collect());
+                    if let Some(&[]) = rules.matches_rule(second_part, &second_rule) {
+                        n_matching += 1;
+                        n_unknown -= 1;
+                        unknown_messages[index] = false;
+                    }
+                } else {
+                    n_unknown -= 1;
+                    unknown_messages[index] = false;
+                }
+                if n_unknown == 0 {
+                    return n_matching;
+                }
+            }
+        }
+    }
+    panic!("This should be unreachable as we should have ran out of unknowns earlier");
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -122,5 +178,9 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(&input()), 118)
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(&input()), 246)
     }
 }
