@@ -198,4 +198,20 @@ Day 17 - Part 1: 273
 Day 17 - Part 2: 1504
 	generator: 626ns,
 	runner: 214.516751ms
+
+Day 18 - Part 1: 6923486965641
+	generator: 238ns,
+	runner: 581.833µs
+
+Day 18 - Part 2: 70722650566361
+	generator: 160ns,
+	runner: 546.503µs
+
+Day 19 - Part 1: 118
+	generator: 253.549µs,
+	runner: 1.098873ms
+
+Day 19 - Part 2: 246
+	generator: 257.228µs,
+	runner: 3.522324ms
 ```
