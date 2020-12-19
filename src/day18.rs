@@ -211,6 +211,10 @@ mod tests {
     }
     #[test]
     fn test_part1() {
-        assert_eq!(part1(&input()), 42)
+        assert_eq!(6923486965641, part1(&input()))
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(70722650566361, part2(&input()))
     }
 }
