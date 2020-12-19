@@ -99,6 +99,12 @@ fn term_end(
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum PrecedenceRule {
+    None,
+    PlusFirst,
+}
+
 /// Contract:
 /// The input str
 /// * is never empty
@@ -108,17 +114,29 @@ fn evaluate_expression(
     tokens: &[Token],
     region: &Range<usize>,
     cache: &HashMap<usize, (Range<usize>, u64)>,
+    prec: PrecedenceRule,
 ) -> u64 {
     if term_end(tokens, region, cache) >= region.end {
         return evaluate_term(tokens, region, cache).unwrap();
     }
 
     let first_term_region = region.start..term_end(tokens, region, cache);
-    let op = tokens[first_term_region.end];
-    let remaining_region = (first_term_region.end + 1)..region.end;
-
-    let first_term = evaluate_term(tokens, &first_term_region, cache).unwrap();
-    let remaining_term = evaluate_expression(tokens, &remaining_region, cache);
+    let mut first_term = evaluate_term(tokens, &first_term_region, cache).unwrap();
+    let mut op = tokens[first_term_region.end];
+    let mut next_term_start = first_term_region.end + 1;
+    while prec == PrecedenceRule::PlusFirst && op == Token::Plus {
+        let next_term_region =
+            next_term_start..term_end(tokens, &(next_term_start..region.end), cache);
+        if next_term_region.end < region.end {
+            op = tokens[next_term_region.end];
+            next_term_start = next_term_region.end + 1;
+            first_term += evaluate_term(tokens, &next_term_region, cache).unwrap();
+        } else {
+            break;
+        }
+    }
+    let remaining_region = next_term_start..region.end;
+    let remaining_term = evaluate_expression(tokens, &remaining_region, cache, prec);
 
     let res = match op {
         Token::Plus => first_term + remaining_term,
@@ -128,7 +146,7 @@ fn evaluate_expression(
     res
 }
 
-fn parse_expression(tokens: &[Token]) -> u64 {
+fn parse_expression(tokens: &[Token], prec: PrecedenceRule) -> u64 {
     let parens = all_matching_parentheses(tokens);
     // TODO: perf: once it works, Vec<u64> where the index represents the key is probably more
     //             efficient
@@ -139,11 +157,11 @@ fn parse_expression(tokens: &[Token]) -> u64 {
             offset,
             (
                 p.content(),
-                evaluate_expression(tokens, &p.content(), &cache),
+                evaluate_expression(tokens, &p.content(), &cache, prec),
             ),
         );
     }
-    evaluate_expression(tokens, &(0..tokens.len()), &cache)
+    evaluate_expression(tokens, &(0..tokens.len()), &cache, prec)
 }
 
 #[aoc(day18, part1)]
@@ -152,7 +170,18 @@ fn part1(s: &str) -> u64 {
         .map(|line| {
             let mut tokens = tokenize(line);
             tokens.reverse();
-            parse_expression(&tokens)
+            parse_expression(&tokens, PrecedenceRule::None)
+        })
+        .sum()
+}
+
+#[aoc(day18, part2)]
+fn part2(s: &str) -> u64 {
+    s.split_terminator('\n')
+        .map(|line| {
+            let mut tokens = tokenize(line);
+            tokens.reverse();
+            parse_expression(&tokens, PrecedenceRule::PlusFirst)
         })
         .sum()
 }
@@ -172,6 +201,13 @@ mod tests {
     fn test_parens() {
         let input = "1 + (2 * 3) + (4 * (5 + 6))";
         assert_eq!(51, part1(input));
+    }
+    #[test]
+    fn test_plus_precedence() {
+        let input = "2 * 3 + (4 * 5)";
+        assert_eq!(46, part2(input));
+        let input = "5 + (8 * 3 + 9 + 3 * 4 * 3)";
+        assert_eq!(1445, part2(input));
     }
     #[test]
     fn test_part1() {
