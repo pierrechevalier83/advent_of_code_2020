@@ -3,27 +3,7 @@ use radix_fmt;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::{self, Debug, Formatter};
-use std::iter::once;
-
-// mapping edge -> candidates, permutation
-//
-// find ones with 2 unmatched edges
-// find one with one unmatched edge
-//
-//
-// mapping of id to edge
-//
-// find all outer edges
-// orient them
-//
-//
-// Representation: top, bottom, left, right (index, 4 u16 numbers)
-//
-// Mapping from each integer to 8 arrays of 4 u16s
-//
-// find any possibility with 2 consecutive edges (tor) that are unmatched or match already placed
-// pieces
-//
+use std::iter::{once, repeat};
 
 const TILE_SIZE: usize = 10;
 
@@ -133,6 +113,7 @@ impl CompactTile {
     }
 }
 
+#[derive(Clone)]
 struct Tile {
     data: [TileSlice; TILE_SIZE],
 }
@@ -155,6 +136,51 @@ impl Tile {
     fn left(&self) -> CompactEdge {
         let left = self.data.iter().map(|row| row[0]).collect::<Vec<_>>();
         CompactEdge::from(left.as_slice()).flipped()
+    }
+    // clockwise rotation
+    fn rotate(&self) -> Self {
+        let mut next = self.data.clone();
+        for ii in 0..TILE_SIZE {
+            for jj in 0..TILE_SIZE {
+                next[ii][jj] = self.data[TILE_SIZE - jj - 1][ii];
+            }
+        }
+        Self { data: next }
+    }
+    fn flip_x(&self) -> Self {
+        let mut next = self.data.clone();
+        for ii in 0..TILE_SIZE {
+            next[ii] = self.data[TILE_SIZE - ii - 1];
+        }
+        Self { data: next }
+    }
+    fn flip_y(&self) -> Self {
+        let mut next = self.data.clone();
+        for ii in 0..TILE_SIZE {
+            for jj in 0..TILE_SIZE {
+                next[ii][jj] = self.data[ii][TILE_SIZE - jj - 1];
+            }
+        }
+        Self { data: next }
+    }
+    fn flip(&self, num_flips: usize) -> Self {
+        match num_flips {
+            0 => self.clone(),
+            1 => self.flip_x(),
+            2 => self.flip_y(),
+            _ => panic!("Expected one of 3 valid values for num_flips"),
+        }
+    }
+    fn with_permutation(&self, perm: PermutationId) -> Self {
+        // See CompactTile::apply_permutation for the source of truth on the order of permutations
+        let mut permuted = self.clone();
+        let num_rotations = perm / 3;
+        let num_flips = perm % 3;
+        for _ in 0..num_rotations {
+            permuted = permuted.rotate();
+        }
+        permuted = permuted.flip(num_flips);
+        permuted
     }
 }
 
@@ -357,6 +383,74 @@ impl Jigsaw {
             }
         }
     }
+    fn picture(&self) -> Vec<Vec<bool>> {
+        let mut output = Vec::<Vec<bool>>::new();
+        for (row_index, row) in self.assemble_jigsaw().iter().enumerate() {
+            for (col_index, (id, perm)) in row.iter().enumerate() {
+                let tile = self.tiles[&id].with_permutation(*perm);
+                for (tile_row_index, tile_row) in tile.data.iter().enumerate() {
+                    if tile_row_index != 0 && tile_row_index != TILE_SIZE - 1 {
+                        if col_index == 0 {
+                            output.push(vec![]);
+                        }
+                        output[row_index * (TILE_SIZE - 2) + (tile_row_index - 1)]
+                            .extend_from_slice(&tile_row[1..(TILE_SIZE - 1)]);
+                    }
+                }
+            }
+        }
+        output
+    }
+}
+
+fn sea_monsters(sea: &[Vec<bool>]) -> Vec<Vec<bool>> {
+    // Sea monster
+    //   01234567890123456789
+    // 0                   #
+    // 1 #    ##    ##    ###
+    // 2  #  #  #  #  #  #
+    let n_cols = 20;
+    let n_rows = 3;
+    let sea_monster = [
+        (0, 18),
+        (1, 0),
+        (1, 5),
+        (1, 6),
+        (1, 11),
+        (1, 12),
+        (1, 17),
+        (1, 18),
+        (1, 19),
+        (2, 1),
+        (2, 4),
+        (2, 7),
+        (2, 10),
+        (2, 13),
+        (2, 16),
+    ];
+    let mut output = repeat(repeat(false).take(sea[0].len()).collect::<Vec<_>>())
+        .take(sea.len())
+        .collect::<Vec<_>>();
+    for row in 0..(sea.len() - n_rows) {
+        for col in 0..(sea[0].len() - n_cols) {
+            if sea_monster.iter().all(|(r, c)| sea[row + r][col + c]) {
+                sea_monster
+                    .iter()
+                    .for_each(|(r, c)| output[row + r][col + c] = true);
+            }
+        }
+    }
+    output
+}
+
+fn rotate(data: &[Vec<bool>]) -> Vec<Vec<bool>> {
+    let mut next = data.iter().cloned().collect::<Vec<_>>();
+    for ii in 0..data.len() {
+        for jj in 0..data[0].len() {
+            next[ii][jj] = data[data[0].len() - jj - 1][ii];
+        }
+    }
+    next
 }
 
 #[aoc_generator(day20)]
@@ -370,6 +464,24 @@ fn part1(jig: &Jigsaw) -> usize {
     let first_row = assembled[0].clone();
     let last_row = assembled.last().unwrap();
     first_row[0].0 * first_row.last().unwrap().0 * last_row[0].0 * last_row.last().unwrap().0
+}
+
+#[aoc(day20, part2)]
+fn part2(jig: &Jigsaw) -> usize {
+    let mut picture = jig.picture();
+    let num_cells = picture.iter().flatten().filter(|cell| **cell).count();
+    let mut num_monster_cells = 0;
+    let mut n_rotations = 0;
+    while num_monster_cells == 0 && n_rotations < 4 {
+        n_rotations += 1;
+        let sea_monsters = sea_monsters(&picture);
+        num_monster_cells = sea_monsters.iter().flatten().filter(|cell| **cell).count();
+        if num_monster_cells == 0 {
+            // Note: found them with only rotation and no flip, so didn't bother flipping
+            picture = rotate(&picture);
+        }
+    }
+    num_cells - num_monster_cells
 }
 
 #[cfg(test)]
@@ -491,6 +603,10 @@ Tile 3079:
     }
     #[test]
     fn test_part1() {
-        assert_eq!(0, part1(&input()))
+        assert_eq!(14065672022953, part1(&input()))
+    }
+    #[test]
+    fn test_part2() {
+        assert_eq!(1885, part2(&input()))
     }
 }

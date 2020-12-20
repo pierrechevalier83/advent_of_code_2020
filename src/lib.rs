@@ -3,6 +3,7 @@
 #![feature(str_split_once)]
 #![feature(drain_filter)]
 #![feature(array_methods)]
+#![feature(array_map)]
 use aoc_runner_derive::aoc_lib;
 
 pub mod point3d;
