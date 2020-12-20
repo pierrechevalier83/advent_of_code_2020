@@ -2,6 +2,7 @@
 #![feature(destructuring_assignment)]
 #![feature(str_split_once)]
 #![feature(drain_filter)]
+#![feature(array_methods)]
 use aoc_runner_derive::aoc_lib;
 
 pub mod point3d;
@@ -27,5 +28,6 @@ pub mod day16;
 pub mod day17;
 pub mod day18;
 pub mod day19;
+pub mod day20;
 
 aoc_lib! { year = 2020 }
