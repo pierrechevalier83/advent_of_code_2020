@@ -215,13 +215,13 @@ Day 19 - Part 2: 246
 	generator: 257.228µs,
 	runner: 3.522324ms
 
-Day 20 - Part 1: 140656720229539
-	generator: 355.339µs,
-	runner: 130.382µs
+Day 20 - Part 1 : 140656720229539
+	generator: 403.453µs,
+	runner: 177.039µs
 
-Day 20 - Part 2: 2440
-	generator: 360.452µs,
-	runner: 527.181µs
+Day 20 - Part 2 : 1885
+	generator: 364.508µs,
+	runner: 332.848µs
 
 Day 21 - Part 1: 2150
 	generator: 1.259011ms,

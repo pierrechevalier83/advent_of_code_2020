@@ -81,22 +81,13 @@ impl CompactTile {
         })
     }
     fn all_flips(&self) -> impl Iterator<Item = Self> + '_ {
-        once(self.clone())
-            .chain(once(self.x_flip()))
-            .chain(once(self.y_flip()))
+        once(self.clone()).chain(once(self.x_flip()))
     }
     fn x_flip(&self) -> Self {
         let mut edges = self.edges.clone();
         edges.swap(TOP, BOTTOM);
         edges[RIGHT] = edges[RIGHT].flipped();
         edges[LEFT] = edges[LEFT].flipped();
-        Self { edges }
-    }
-    fn y_flip(&self) -> Self {
-        let mut edges = self.edges.clone();
-        edges.swap(RIGHT, LEFT);
-        edges[TOP] = edges[TOP].flipped();
-        edges[BOTTOM] = edges[BOTTOM].flipped();
         Self { edges }
     }
     fn left(&self) -> CompactEdge {
@@ -154,28 +145,18 @@ impl Tile {
         }
         Self { data: next }
     }
-    fn flip_y(&self) -> Self {
-        let mut next = self.data.clone();
-        for ii in 0..TILE_SIZE {
-            for jj in 0..TILE_SIZE {
-                next[ii][jj] = self.data[ii][TILE_SIZE - jj - 1];
-            }
-        }
-        Self { data: next }
-    }
     fn flip(&self, num_flips: usize) -> Self {
         match num_flips {
             0 => self.clone(),
             1 => self.flip_x(),
-            2 => self.flip_y(),
             _ => panic!("Expected one of 3 valid values for num_flips"),
         }
     }
     fn with_permutation(&self, perm: PermutationId) -> Self {
         // See CompactTile::apply_permutation for the source of truth on the order of permutations
         let mut permuted = self.clone();
-        let num_rotations = perm / 3;
-        let num_flips = perm % 3;
+        let num_rotations = perm / 2;
+        let num_flips = perm % 2;
         for _ in 0..num_rotations {
             permuted = permuted.rotate();
         }
