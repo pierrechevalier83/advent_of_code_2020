@@ -2,32 +2,6 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashSet};
 
-// HashSet
-// dairy => mxmxvkd kfcds sqhjc nhms
-// fish => mxmxvkd kfcds sqhjc nhms
-// dairy => intersect with trh fvjkl sbzzf mxmxvkd
-// dairy => mxmxvkd
-// not dairy: everything else (in big Vec of ingredients, with duplicates))
-// mapped => mxmxvkd
-//
-// fish => intersect with sqjhc mxmxvkd sbzzf
-// fish => mxmxvkd sqhjc
-//   remove perfect mappings
-// fish => sqhjc
-// mapped => mxmxvkd, sqhjc
-//
-// soy => sqjhc, fvjkl
-// soy => fvjkl
-// mapped => mxmxvkd, sqhjc, fvjkl
-//
-// fish => sqjhc mxmxvkd sbzzf
-// sbzzf
-// mapped => mxmxvkd, sqhjc, fvjkl, sbzzf
-//
-// Build all intersection sets
-// Find one that has size one when filtered with mapped
-// Add mapping
-
 type Alergen = String;
 type Food = String;
 
