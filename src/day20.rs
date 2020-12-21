@@ -603,7 +603,7 @@ Tile 3079:
     }
     #[test]
     fn test_part1() {
-        assert_eq!(14065672022953, part1(&input()))
+        assert_eq!(140656720229539, part1(&input()))
     }
     #[test]
     fn test_part2() {
