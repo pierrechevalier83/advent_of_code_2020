@@ -385,30 +385,27 @@ impl Jigsaw {
 }
 
 fn sea_monsters(sea: &[Vec<bool>]) -> Vec<Vec<bool>> {
-    // Sea monster
-    //   01234567890123456789
-    // 0                   #
-    // 1 #    ##    ##    ###
-    // 2  #  #  #  #  #  #
-    let n_cols = 20;
-    let n_rows = 3;
-    let sea_monster = [
-        (0, 18),
-        (1, 0),
-        (1, 5),
-        (1, 6),
-        (1, 11),
-        (1, 12),
-        (1, 17),
-        (1, 18),
-        (1, 19),
-        (2, 1),
-        (2, 4),
-        (2, 7),
-        (2, 10),
-        (2, 13),
-        (2, 16),
+    let monster = [
+        "                  # ",
+        "#    ##    ##    ###",
+        " #  #  #  #  #  #   ",
     ];
+    let n_rows = monster.len();
+    let n_cols = monster[0].chars().count();
+    let sea_monster = monster
+        .iter()
+        .enumerate()
+        .flat_map(|(row_index, row)| {
+            row.chars().enumerate().filter_map(move |(col_index, c)| {
+                if c == '#' {
+                    Some((row_index, col_index))
+                } else {
+                    None
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+
     let mut output = repeat(repeat(false).take(sea[0].len()).collect::<Vec<_>>())
         .take(sea.len())
         .collect::<Vec<_>>();
