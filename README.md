@@ -231,4 +231,11 @@ Day 21 - Part 2: vpzxk,bkgmcsx,qfzv,tjtgbf,rjdqt,hbnf,jspkl,hdcj
 	generator: 1.244023ms,
 	runner: 18.146µs
 
+Day 22 - Part 1 : 32856
+	generator: 5.064µs,
+	runner: 26.329µs
+
+Day 22 - Part 2 : 33805
+	generator: 4.481µs,
+	runner: 69.888044ms
 ```

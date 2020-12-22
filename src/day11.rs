@@ -1,4 +1,4 @@
-use aoc_runner_derive::{aoc};
+use aoc_runner_derive::aoc;
 use itertools::Itertools;
 use std::fmt::{self, Debug, Formatter};
 use std::iter::repeat;
