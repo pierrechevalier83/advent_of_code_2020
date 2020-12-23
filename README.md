@@ -238,4 +238,12 @@ Day 22 - Part 1 : 32856
 Day 22 - Part 2 : 33805
 	generator: 4.481µs,
 	runner: 69.888044ms
+
+Day 23 - Part 1 : 25468379
+	generator: 566ns,
+	runner: 28.999µs
+
+Day 23 - Part 2 : 474747880250
+	generator: 481ns,
+	runner: 5.359928866s
 ```

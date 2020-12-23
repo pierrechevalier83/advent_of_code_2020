@@ -1,0 +1,122 @@
+use aoc_runner_derive::{aoc, aoc_generator};
+
+#[derive(Clone, Debug)]
+struct Cups {
+    // Instead of keeping track of wrapping indices, I will use a rotating
+    // Vec where the first element is always the current element.
+    // This removes most edge-cases from this challenge and will make the
+    // implementation more straightforward
+    cups: Vec<u64>,
+}
+
+impl From<&str> for Cups {
+    fn from(s: &str) -> Cups {
+        Cups {
+            cups: s
+                .chars()
+                .filter_map(|c| c.to_digit(10).map(|digit| digit as u64))
+                .collect(),
+        }
+    }
+}
+
+impl Cups {
+    fn wrap_decrement(&self, x: u64) -> u64 {
+        if x == 1 {
+            self.cups.len() as u64
+        } else {
+            x - 1
+        }
+    }
+    fn next_move(&mut self) {
+        // The crab picks up the three cups that are immediately clockwise of
+        // the current cup. They are removed from the circle; cup spacing is
+        // adjusted as necessary to maintain the circle.
+        let picked_up = &self.cups[1..4];
+        // The crab selects a destination cup: the cup with a label equal to
+        // the current cup's label minus one. If this would select one of the
+        // cups that was just picked up, the crab will keep subtracting one
+        // until it finds a cup that wasn't just picked up. If at any point in
+        // this process the value goes below the lowest value on any cup's
+        // label, it wraps around to the highest value on any cup's label
+        // instead.
+        let mut destination_cup = self.wrap_decrement(self.cups[0]);
+        while picked_up
+            .iter()
+            .find(|cup| **cup == destination_cup)
+            .is_some()
+        {
+            destination_cup = self.wrap_decrement(destination_cup);
+        }
+        // The crab places the cups it just picked up so that they are
+        // immediately clockwise of the destination cup. They keep the same
+        // order as when they were picked up.
+        let destination_pos = self
+            .cups
+            .iter()
+            .position(|cup| *cup == destination_cup)
+            .unwrap();
+        self.cups[1..(destination_pos + 1)].rotate_left(3);
+        self.cups.rotate_left(1);
+    }
+    fn nth_move(&mut self, n: usize) {
+        for i in 0..n {
+            println!("{: >5}: {:?}", i, self);
+            self.next_move();
+        }
+    }
+    fn order_string(&self) -> String {
+        let mut order = self.cups.clone();
+        let pos_one = order.iter().position(|x| *x == 1).unwrap();
+        order.rotate_left(pos_one);
+        order
+            .iter()
+            .skip(1)
+            .map(|digit| std::char::from_digit(*digit as u32, 10).unwrap())
+            .collect()
+    }
+}
+
+#[aoc_generator(day23)]
+fn parse_input(s: &str) -> Cups {
+    Cups::from(s)
+}
+
+#[aoc(day23, part1)]
+fn part1(cups: &Cups) -> String {
+    let mut cups = cups.clone();
+    cups.nth_move(100);
+    cups.order_string()
+}
+#[aoc(day23, part2)]
+fn part2(cups: &Cups) -> String {
+    let mut cups = cups.clone();
+    cups.cups.extend(&(10..=100).collect::<Vec<_>>());
+    cups.nth_move(10);
+    cups.order_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn input() -> Cups {
+        parse_input(include_str!("../input/2020/day23.txt"))
+    }
+    const EXAMPLE: &'static str = "389125467";
+    #[test]
+    fn test_example_10_moves() {
+        let mut cups = Cups::from(EXAMPLE);
+        cups.nth_move(10);
+        assert_eq!("92658374", cups.order_string())
+    }
+    #[test]
+    fn test_example_100_moves() {
+        let mut cups = Cups::from(EXAMPLE);
+        cups.nth_move(100);
+        assert_eq!("67384529", cups.order_string());
+    }
+    #[test]
+    fn test_part1() {
+        assert_eq!("25468379", part1(&input()))
+    }
+}
