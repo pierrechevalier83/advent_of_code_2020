@@ -1,6 +1,7 @@
 #![feature(iterator_fold_self)]
 #![feature(destructuring_assignment)]
 #![feature(str_split_once)]
+#![feature(split_inclusive)]
 #![feature(drain_filter)]
 #![feature(array_methods)]
 #![feature(array_map)]
@@ -33,5 +34,6 @@ pub mod day20;
 pub mod day21;
 pub mod day22;
 pub mod day23;
+pub mod day24;
 
 aoc_lib! { year = 2020 }
