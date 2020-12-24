@@ -246,4 +246,12 @@ Day 23 - Part 1 : 25468379
 Day 23 - Part 2 : 474747880250
 	generator: 481ns,
 	runner: 5.359928866s
+
+Day 24 - Part 1 : 549
+	generator: 291.079µs,
+	runner: 404ns
+
+Day 24 - Part 2 : 4147
+	generator: 270.699µs,
+	runner: 213.81922ms
 ```
