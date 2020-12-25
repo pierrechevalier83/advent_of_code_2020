@@ -254,4 +254,8 @@ Day 24 - Part 1 : 549
 Day 24 - Part 2 : 4147
 	generator: 270.699µs,
 	runner: 213.81922ms
+
+Day 25 - Part 1 : 17980581
+	generator: 2.381µs,
+	runner: 34.356906ms
 ```
