@@ -7,37 +7,35 @@ fn puzzle_input(max_size: usize) -> Game {
 
 #[derive(Debug)]
 struct Game {
-    len: usize,
-    last: usize,
-    turn: usize,
-    previously_seen: Vec<Option<usize>>,
+    last: u32,
+    turn: u32,
+    previously_seen: Vec<Option<u32>>,
 }
 
 impl Game {
-    fn from(seq: Vec<usize>, max_size: usize) -> Self {
+    fn from(seq: Vec<u32>, max_size: usize) -> Self {
         let mut previously_seen = repeat(None).take(max_size).collect::<Vec<_>>();
         seq.iter()
             .take(seq.len() - 1)
             .enumerate()
             .for_each(|(i, n)| {
-                previously_seen[*n] = Some(i);
+                previously_seen[*n as usize] = Some(i as u32);
             });
         Self {
-            len: seq.len(),
             last: *seq.last().unwrap(),
-            turn: seq.len(),
+            turn: seq.len() as u32,
             previously_seen,
         }
     }
 }
 
 impl Iterator for Game {
-    type Item = usize;
-    fn next(&mut self) -> Option<usize> {
-        let next = self.previously_seen[self.last]
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        let next = self.previously_seen[self.last as usize]
             .map(|previously_seen_at| self.turn - 1 - previously_seen_at)
             .unwrap_or(0);
-        self.previously_seen[self.last] = Some(self.turn - 1);
+        self.previously_seen[self.last as usize] = Some(self.turn - 1);
         self.turn += 1;
         self.last = next;
         Some(next)
@@ -45,14 +43,14 @@ impl Iterator for Game {
 }
 
 #[aoc(day15, part1)]
-fn part1(_: &str) -> usize {
+fn part1(_: &str) -> u32 {
     let mut game = puzzle_input(2020);
-    game.nth(2020 - game.len - 1).unwrap()
+    game.nth(2020 - 7 - 1).unwrap()
 }
 #[aoc(day15, part2)]
-fn part2(_: &str) -> usize {
+fn part2(_: &str) -> u32 {
     let mut game = puzzle_input(30_000_000);
-    game.nth(30_000_000 - game.len - 1).unwrap()
+    game.nth(30_000_000 - 7 - 1).unwrap()
 }
 
 #[cfg(test)]
