@@ -175,13 +175,13 @@ Day 14 - Part 2: 4200656704538
 	generator: 359.083µs,
 	runner: 10.843888ms
 
-Day 15 - Part 1: 1238
-	generator: 453ns,
-	runner: 48.763µs
+Day 15 - Part 1 : 1238
+	generator: 241ns,
+	runner: 15.434µs
 
-Day 15 - Part 2: 3745954
-	generator: 175ns,
-	runner: 2.376411589s
+Day 15 - Part 2 : 3745954
+	generator: 231ns,
+	runner: 785.663929ms
 
 Day 16 - Part 1: 27850
 	generator: 405ns,

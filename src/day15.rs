@@ -9,22 +9,26 @@ fn puzzle_input(max_size: usize) -> Game {
 struct Game {
     last: u32,
     turn: u32,
-    previously_seen: Vec<Option<u32>>,
+    previously_seen: Vec<bool>,
+    history: Vec<u32>,
 }
 
 impl Game {
     fn from(seq: Vec<u32>, max_size: usize) -> Self {
-        let mut previously_seen = repeat(None).take(max_size).collect::<Vec<_>>();
+        let mut history = repeat(0).take(max_size).collect::<Vec<_>>();
+        let mut previously_seen = repeat(false).take(max_size).collect::<Vec<_>>();
         seq.iter()
             .take(seq.len() - 1)
             .enumerate()
             .for_each(|(i, n)| {
-                previously_seen[*n as usize] = Some(i as u32);
+                previously_seen[*n as usize] = true;
+                history[*n as usize] = i as u32;
             });
         Self {
             last: *seq.last().unwrap(),
             turn: seq.len() as u32,
             previously_seen,
+            history,
         }
     }
 }
@@ -32,10 +36,14 @@ impl Game {
 impl Iterator for Game {
     type Item = u32;
     fn next(&mut self) -> Option<u32> {
-        let next = self.previously_seen[self.last as usize]
-            .map(|previously_seen_at| self.turn - 1 - previously_seen_at)
-            .unwrap_or(0);
-        self.previously_seen[self.last as usize] = Some(self.turn - 1);
+        let last = self.last as usize;
+        let next = if self.previously_seen[last] {
+            self.turn - 1 - self.history[last]
+        } else {
+            0
+        };
+        self.previously_seen[last] = true;
+        self.history[last] = self.turn - 1;
         self.turn += 1;
         self.last = next;
         Some(next)
