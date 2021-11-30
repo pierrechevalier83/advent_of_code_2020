@@ -40,10 +40,10 @@ impl From<&str> for Tiles {
                             index += 1;
                             Direction::SouthWest.coord()
                         }
-                        _ => panic!(format!(
+                        _ => panic!(
                             "Expected only hexagonal directions, got: \"{}\"",
                             &s[index..(index + 2)]
-                        )),
+                        ),
                     },
                 };
                 index += 1;

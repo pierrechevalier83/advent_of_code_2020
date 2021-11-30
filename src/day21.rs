@@ -88,11 +88,11 @@ fn part1(foods: &FoodList) -> usize {
 fn part2(foods: &FoodList) -> String {
     let mut mappings = foods.num_unmapped_ingredients_and_mappings().1;
     mappings.sort_by(|(left_alergen, _), (right_alergen, _)| left_alergen.cmp(right_alergen));
-    mappings
-        .iter()
-        .map(|(_, food)| food.to_owned())
-        .intersperse(",".to_string())
-        .collect::<String>()
+    std::iter::Iterator::intersperse(
+        mappings.iter().map(|(_, food)| food.to_owned()),
+        ",".to_string(),
+    )
+    .collect::<String>()
 }
 
 #[cfg(test)]
